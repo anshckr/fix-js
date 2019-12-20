@@ -27,6 +27,7 @@ var {
   transformLeakingGlobalsVars,
   transformUnusedAssignedVars
 } = require('@anshckr/fix-js');
+
 ```
 
 ## API
