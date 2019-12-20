@@ -1,5 +1,5 @@
 {
-  "name": "fix-js",
+  "name": "@anshckr/fix-js",
   "version": "1.0.0",
   "description": "Detects and fixes global leaks in JS code",
   "main": "index.js",
