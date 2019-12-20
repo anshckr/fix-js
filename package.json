@@ -1,5 +1,5 @@
 {
-  "name": "fix-js-global-leaks",
+  "name": "fix-js",
   "version": "1.0.0",
   "description": "Detects and fixes global leaks in JS code",
   "main": "index.js",
@@ -8,11 +8,20 @@
     "test:debug": "nodemon --inspect-brk test.js"
   },
   "author": "Anshul Nema",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "acorn": "7.1.0",
     "acorn-walk": "7.0.0",
     "jscodeshift": "0.7.0",
     "underscore": "1.9.1"
-  }
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anshckr/fix-js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/anshckr/fix-js/issues"
+  },
+  "homepage": "https://github.com/anshckr/fix-js#readme"
 }
