@@ -1,0 +1,18 @@
+{
+  "name": "fix-js-global-leaks",
+  "version": "1.0.0",
+  "description": "Detects and fixes global leaks in JS code",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:debug": "nodemon --inspect-brk test.js"
+  },
+  "author": "Anshul Nema",
+  "license": "ISC",
+  "dependencies": {
+    "acorn": "7.1.0",
+    "acorn-walk": "7.0.0",
+    "jscodeshift": "0.7.0",
+    "underscore": "1.9.1"
+  }
+}
