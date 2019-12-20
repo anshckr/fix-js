@@ -1,12 +1,19 @@
 {
   "name": "@anshckr/fix-js",
-  "version": "1.0.2",
-  "description": "Detects and fixes global leaks in JS code",
+  "version": "1.0.3",
+  "description": "Fix JS code",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "sample:debug": "nodemon --inspect-brk sample.js"
   },
+  "keywords": [
+    "detect and fix JS global leaks",
+    "cleanup unused assigned variables",
+    "codemod to fix JS global leaks",
+    "jscodeshift",
+    "acorn"
+  ],
   "author": "Anshul Nema",
   "license": "MIT",
   "dependencies": {
