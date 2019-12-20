@@ -17,6 +17,7 @@ var constants = require("./static/constants.json");
 
 // transformers
 var transformLeakingGlobalsVars = require('./transforms/leaking-global-vars');
+var transformUnusedAssignedVars = require('./transforms/unused-assigned-vars');
 
 /* will be ignored in dependencies -- start */
 
@@ -24,9 +25,7 @@ var allExternalDeps = Object.keys(constants).reduce((accumulator, key) => accumu
 
 var ignoreableExternalDeps = [];
 
-var ignoreFilesRegex = [];
-
-var ignoreFoldersRegex = [];
+var ignoreFilesRegex, ignoreFoldersRegex;
 
 /* will be ignored in dependencies -- end */
 
@@ -61,7 +60,7 @@ function fillAllGlobalsConstants(filePath) {
   // console.log("Reading: '%s'", filePath);
   var source = fs.readFileSync(filePath, { encoding: 'utf8' });
 
-  const ast = acorn.parse(source, {
+  var ast = acorn.parse(source, {
     loc: true
   });
 
@@ -76,6 +75,24 @@ function fillAllGlobalsConstants(filePath) {
   // set allGlobalsExposed && allGlobalDeps in first iteration
   allGlobalsExposed = allGlobalsExposed.concat(globalsExposed);
   allGlobalDeps = allGlobalDeps.concat(depNames);
+}
+
+// Loop through all the files in the temp directory
+function executeTransformerWithDeps(filePath) {
+  // console.log("Reading: '%s'", filePath);
+  var source = fs.readFileSync(filePath, { encoding: 'utf8' });
+
+  var ast = acorn.parse(source, {
+    loc: true
+  });
+
+  var dependencies = findGlobalDeps(ast)
+    .filter(dep => allExternalDeps.indexOf(dep.name) === -1)
+    .filter(dep => ignoreableExternalDeps.indexOf(dep.name) === -1);
+
+  dependencies = [...new Set(dependencies.filter(e => allGlobalsExposed.indexOf(e.name) === -1))];
+
+  return this(filePath, dependencies);
 }
 
 function findGlobalsAtPath(dirPath) {
@@ -99,30 +116,34 @@ function findGlobalsAtPath(dirPath) {
 }
 
 function executeTransformer(filePath) {
-  var results = transformLeakingGlobalsVars(source, [...new Set(dependencies.filter(e => allGlobalsExposed.indexOf(e.name) === -1))], filePath);
+  var results = this(filePath);
 
   if (results) {
     fs.writeFileSync(filePath, results.replace(/;;/g, ';'));
   }
 }
 
-function fixGlobalsAtPath(dirPath, paramsIgnoreFilesRegex, paramsIgnoreFoldersRegex, paramsIgnoreableExternalDeps) {
-  ignoreFilesRegex = ignoreFilesRegex.concat(paramsIgnoreFilesRegex);
-  ignoreFoldersRegex = ignoreFoldersRegex.concat(paramsIgnoreFoldersRegex);
-  ignoreableExternalDeps = paramsIgnoreableExternalDeps.concat(paramsIgnoreableExternalDeps);
+/**
+ * { fixJSsAtPath: Transforms all the JS files at the dirPath }
+ *
+ * @param      {<string>}    dirPath                                The directory where you want to run the transform at
+ * @param      {<Regex>}     paramsIgnoreFilesRegex                 Regular expression to match file names to ignore during transform
+ * @param      {<Regex>}     paramsIgnoreFoldersRegex               Regular expression to match folder names to ignore during transform
+ * @param      {<Function>}  transformer                            The transformer which will modify the JS files
+ * @param      {<Array>}     [paramsIgnoreableExternalDeps=[]]      Array of depencies to ignore during transform
+ */
+function fixJSsAtPath(dirPath, paramsIgnoreFilesRegex, paramsIgnoreFoldersRegex, transformer, paramsIgnoreableExternalDeps = []) {
+  ignoreFilesRegex = paramsIgnoreFilesRegex;
+  ignoreFoldersRegex = paramsIgnoreFoldersRegex;
+  ignoreableExternalDeps = ignoreableExternalDeps.concat(paramsIgnoreableExternalDeps)
 
   findGlobalsAtPath(dirPath).then(function(allGlobalsObj) {
-    recursiveDirFilesIterator(dirPath, executeTransformer);
+    recursiveDirFilesIterator(dirPath, executeTransformerWithDeps.bind(transformer));
   });
 }
 
-// Example of how to use this package
-// transformers
-// var directoryPath = "/Users/Anshul/railsApp/public/javascripts";
-// var ignoreFilesRegex = /^socket|polyfill|app-parser|prettify|run_prettify|jquery|\.min\.js/;
-// var ignoreFoldersRegex = /test|\/libraries|static\/plugins/;
-// var ignoreableExternalDeps = Object.keys(dependenciesObj).reduce((accumulator, key) => accumulator.concat(dependenciesObj[key]), []);
-// 
-// fixGlobalsAtPath(directoryPath, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
-
-module.exports = fixGlobalsAtPath;
+module.exports = {
+ fixJSsAtPath: fixJSsAtPath,
+ transformLeakingGlobalsVars: transformLeakingGlobalsVars,
+ transformUnusedAssignedVars: transformUnusedAssignedVars 
+};

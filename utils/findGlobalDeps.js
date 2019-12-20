@@ -1,3 +1,5 @@
+var walk = require("acorn-walk");
+
 function isScope(node) {
   return node.type === 'FunctionExpression' || node.type === 'FunctionDeclaration' || node.type === 'ArrowFunctionExpression' || node.type === 'Program';
 }

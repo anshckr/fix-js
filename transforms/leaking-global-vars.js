@@ -1,11 +1,12 @@
-const jscodeshift = require('jscodeshift');
-const _ = require('underscore');
+var fs = require('fs');
+var jscodeshift = require('jscodeshift');
+var _ = require('underscore');
 
-const j = jscodeshift;
+var j = jscodeshift;
 
-const getAllAncestors = (path) => {
-  let results = [];
-  let parent = path.parent;
+var getAllAncestors = (path) => {
+  var results = [];
+  var parent = path.parent;
   while (
     parent
   ) {
@@ -18,10 +19,10 @@ const getAllAncestors = (path) => {
   return results;
 }
 
-const allCommonScopeTypes = [];
+var allCommonScopeTypes = [];
 
-const insertVarDeclaration = (blockStatementNode, depName) => {
-  const variableDeclaration = blockStatementNode.body.find(node => node.type === 'VariableDeclaration');
+var insertVarDeclaration = (blockStatementNode, depName) => {
+  var variableDeclaration = blockStatementNode.body.find(node => node.type === 'VariableDeclaration');
 
   if (variableDeclaration) {
     // there is already variable declaration inside BlockStatement
@@ -38,8 +39,8 @@ const insertVarDeclaration = (blockStatementNode, depName) => {
   }
 }
 
-const constructMemberExpressionForObjectKey = (closestScopeCollec, property) => {
-  const parentNodePath = closestScopeCollec.paths()[0].parentPath.value;
+var constructMemberExpressionForObjectKey = (closestScopeCollec, property) => {
+  var parentNodePath = closestScopeCollec.paths()[0].parentPath.value;
 
   if (parentNodePath.type === 'VariableDeclarator') {
     return j.memberExpression(
@@ -54,9 +55,9 @@ const constructMemberExpressionForObjectKey = (closestScopeCollec, property) => 
   );
 };
 
-const insertObjectProperty = (closestScopeCollec, depName) => {
+var insertObjectProperty = (closestScopeCollec, depName) => {
   if (closestScopeCollec.paths()[0].scope.isGlobal) {
-    const objectExpressionNode = closestScopeCollec.nodes()[0];
+    var objectExpressionNode = closestScopeCollec.nodes()[0];
 
     // insert corresponding key in the object
     objectExpressionNode.properties.unshift(
@@ -67,28 +68,28 @@ const insertObjectProperty = (closestScopeCollec, depName) => {
       )
     );
 
-    const depUsageCollec = closestScopeCollec.find(j.Identifier, { name: depName })
+    var depUsageCollec = closestScopeCollec.find(j.Identifier, { name: depName })
       .filter(path => path.parentPath.value.type !== "Property")
       .filter(path => !['params'].includes(path.parentPath.name))
       .filter(path => !_.pluck(path.parentPath.scope.path.get('params').value, 'name').includes(depName));
 
-    const [depUsagePathsNonVariableDeclarations, depUsagePathsVariableDeclarations] = _.partition(depUsageCollec.paths(), path => path.parentPath.value.type !== "VariableDeclarator")
+    var [depUsagePathsNonVariableDeclarations, depUsagePathsVariableDeclarations] = _.partition(depUsageCollec.paths(), path => path.parentPath.value.type !== "VariableDeclarator")
 
     // replace all occurences with Obj.key except those which are coming from param in the scope
 
-    const memberExpressionToInsert = constructMemberExpressionForObjectKey(closestScopeCollec.at(0), depName);
+    var memberExpressionToInsert = constructMemberExpressionForObjectKey(closestScopeCollec.at(0), depName);
     j(depUsagePathsNonVariableDeclarations).forEach(path => {
       path.replace(memberExpressionToInsert);
     });
 
     j(depUsagePathsVariableDeclarations).forEach(path => {
-      const pathCollec = j(path);
+      var pathCollec = j(path);
 
-      const variableDeclarationCollec = pathCollec.closest(j.VariableDeclaration);
-      const variableDeclaratorCollec = variableDeclarationCollec.findVariableDeclarators(depName);
+      var variableDeclarationCollec = pathCollec.closest(j.VariableDeclaration);
+      var variableDeclaratorCollec = variableDeclarationCollec.findVariableDeclarators(depName);
 
-      const variableDeclarationNodePath = variableDeclarationCollec.paths()[0];
-      const variableDeclaratorNodePath = variableDeclaratorCollec.paths()[0];
+      var variableDeclarationNodePath = variableDeclarationCollec.paths()[0];
+      var variableDeclaratorNodePath = variableDeclaratorCollec.paths()[0];
 
       if (variableDeclarationNodePath.value.declarations.length === 1) {
         variableDeclarationNodePath
@@ -119,20 +120,20 @@ const insertObjectProperty = (closestScopeCollec, depName) => {
   }
 }
 
-const handleScopeByType = (closestScopeCollec, depName, fileName) => {
+var handleScopeByType = (closestScopeCollec, depName, filePath) => {
   if (closestScopeCollec.length > 1) {
-    console.log('\nFileName - %s\nmultiple closest scope', fileName);
+    console.log('\nFilePath - %s\nmultiple closest scope', filePath);
   }
 
-  const scopeType = closestScopeCollec.get('type').value;
+  var scopeType = closestScopeCollec.get('type').value;
 
   switch (scopeType) {
     case 'Program':
       {
-        const assignmentExpressionNodePath = closestScopeCollec.find(j.AssignmentExpression, { left: { name: depName } }).paths()[0];
+        var assignmentExpressionNodePath = closestScopeCollec.find(j.AssignmentExpression, { left: { name: depName } }).paths()[0];
 
         if (!assignmentExpressionNodePath) {
-          console.log('\nFileName - %s\nNo assignmentExpression found at program level for %s', fileName, depName);
+          console.log('\nFilePath - %s\nNo assignmentExpression found at program level for %s', filePath, depName);
           return;
         }
 
@@ -146,7 +147,7 @@ const handleScopeByType = (closestScopeCollec, depName, fileName) => {
       }
     case 'BlockStatement':
       {
-        const blockStatementNode = closestScopeCollec.nodes()[0];
+        var blockStatementNode = closestScopeCollec.nodes()[0];
 
         insertVarDeclaration(blockStatementNode, depName);
 
@@ -155,7 +156,7 @@ const handleScopeByType = (closestScopeCollec, depName, fileName) => {
     case 'FunctionDeclaration':
     case 'FunctionExpression':
       {
-        const blockStatementNode = closestScopeCollec.find(j.BlockStatement).paths().find(path => path.parent === closestScopeCollec.paths()[0]).node;
+        var blockStatementNode = closestScopeCollec.find(j.BlockStatement).paths().find(path => path.parent === closestScopeCollec.paths()[0]).node;
 
         insertVarDeclaration(blockStatementNode, depName);
 
@@ -163,39 +164,48 @@ const handleScopeByType = (closestScopeCollec, depName, fileName) => {
       }
     case 'ObjectExpression':
       {
-        console.log("\nFileName - %s\nInserting object property: %s", fileName, depName);
+        console.log("\nFilePath - %s\nInserting object property: %s", filePath, depName);
         insertObjectProperty(closestScopeCollec, depName);
 
         break;
       }
     default:
-      console.log('\nFileName - %s\nUnhandled scope type - %s for dependency - %s', fileName, scopeType, depName);
+      console.log('\nFilePath - %s\nUnhandled scope type - %s for dependency - %s', filePath, scopeType, depName);
   }
 }
 
-module.exports = (source, dependencies, fileName) => {
-  const root = j(source);
+/**
+ * { Transformer to fix all the leaking globals from a JS file }
+ *
+ * @param      {<String>}  filePath      Path of the file to fix
+ * @param      {<Array>}   dependencies  Array of Dependencies for the file at filePath 
+ * @return     {<String>}  { Transformed string to write to the file }
+ */
+module.exports = (filePath, dependencies) => {
+  var source = fs.readFileSync(filePath, { encoding: 'utf8' });
 
-  console.log('\nFixing FileName - %s\n', fileName);
+  var root = j(source);
+
+  console.log('\nFixing FileName - %s\n', filePath);
 
   dependencies.forEach(({ name, nodes }) => {
     console.log('Dependency - %s\n', name);
 
-    const nodesStart = _.pluck(nodes, 'start');
+    var nodesStart = _.pluck(nodes, 'start');
 
-    let nodePathsCollection = root.find(j.Identifier, path => name === path.name && nodesStart.includes(path.start));
+    var nodePathsCollection = root.find(j.Identifier, path => name === path.name && nodesStart.includes(path.start));
 
     if (!nodePathsCollection.length) {
-      console.log('\nFixing FileName - %s\nNo matching nodes found for dependency - %s\n', fileName, name);
+      console.log('\nFixing FileName - %s\nNo matching nodes found for dependency - %s\n', filePath, name);
       return;
     }
 
     // fix only dependencies with AssignmentExpression, ex: a = 1;
-    const identifiersWithinAssignExpCollection = nodePathsCollection
+    var identifiersWithinAssignExpCollection = nodePathsCollection
       .filter(path => path.parentPath.value.type === "AssignmentExpression");
 
     if (identifiersWithinAssignExpCollection.length === nodePathsCollection.length) {
-      const standaloneExpressionStatement = identifiersWithinAssignExpCollection.closest(j.ExpressionStatement);
+      var standaloneExpressionStatement = identifiersWithinAssignExpCollection.closest(j.ExpressionStatement);
 
       // only one references to the variable and that too not at Program level then directly remove its expression
       if (standaloneExpressionStatement.length && standaloneExpressionStatement.closestScope().paths()[0].value.type !== 'Program') {
@@ -206,24 +216,24 @@ module.exports = (source, dependencies, fileName) => {
     }
 
     // group nodes with common scope together
-    const groupedByScopeNodePathsObj = _.chain(nodePathsCollection.paths())
+    var groupedByScopeNodePathsObj = _.chain(nodePathsCollection.paths())
       .groupBy(path => j(path).closestScope().get(0).scope.path.value.start)
       .value();
 
-    let isDeclaredAtProgramLevel = false;
+    var isDeclaredAtProgramLevel = false;
 
-    // let eachGroupHasAssignmentExp = true;
+    // var eachGroupHasAssignmentExp = true;
 
-    const scopesStart = Object.keys(groupedByScopeNodePathsObj);
+    var scopesStart = Object.keys(groupedByScopeNodePathsObj);
 
-    let insertAtScopeCollec;
+    var insertAtScopeCollec;
 
     scopesStart.forEach((start) => {
-      const nodePaths = groupedByScopeNodePathsObj[start];
+      var nodePaths = groupedByScopeNodePathsObj[start];
 
-      const groupedCollection = j(nodePaths);
+      var groupedCollection = j(nodePaths);
 
-      const closestScopeCollec = groupedCollection.closestScope(j.Node, { start: parseInt(start) });
+      var closestScopeCollec = groupedCollection.closestScope(j.Node, { start: parseInt(start) });
 
       if (closestScopeCollec.paths()[0].value.type === 'Program') {
         isDeclaredAtProgramLevel = true;
@@ -233,20 +243,20 @@ module.exports = (source, dependencies, fileName) => {
     });
 
     // find closest common scope
-    let argumentsArr = [];
+    var argumentsArr = [];
 
     nodePathsCollection.forEach(path => {
       argumentsArr.push(getAllAncestors(path));
     });
 
-    const allCommonAncestorNodes = _.intersection(...argumentsArr);
+    var allCommonAncestorNodes = _.intersection(...argumentsArr);
 
-    const closestParentCollec = j(allCommonAncestorNodes).at(0);
+    var closestParentCollec = j(allCommonAncestorNodes).at(0);
 
-    const closestScopeCollec = closestParentCollec.closestScope();
+    var closestScopeCollec = closestParentCollec.closestScope();
 
     if (closestScopeCollec.length) {
-      const isAtProgramScope = closestScopeCollec.paths()[0].value.type === 'Program';
+      var isAtProgramScope = closestScopeCollec.paths()[0].value.type === 'Program';
 
       if (!isAtProgramScope) {
         insertAtScopeCollec = closestScopeCollec;
@@ -259,20 +269,20 @@ module.exports = (source, dependencies, fileName) => {
 
     if (insertAtScopeCollec) {
       // if insertAtScopeCollec scope
-      handleScopeByType(insertAtScopeCollec, name, fileName);
+      handleScopeByType(insertAtScopeCollec, name, filePath);
 
       return; // found a common scope
     }
 
     scopesStart.forEach((start) => {
-      const nodePaths = groupedByScopeNodePathsObj[start];
+      var nodePaths = groupedByScopeNodePathsObj[start];
 
-      const groupedCollection = j(nodePaths);
+      var groupedCollection = j(nodePaths);
 
-      const closestScopeCollec = groupedCollection.closestScope(j.Node, { start: parseInt(start) });
+      var closestScopeCollec = groupedCollection.closestScope(j.Node, { start: parseInt(start) });
 
       // declare at each scope level
-      handleScopeByType(closestScopeCollec, name, fileName);
+      handleScopeByType(closestScopeCollec, name, filePath);
     });
   });
 
