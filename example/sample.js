@@ -1,7 +1,7 @@
 // Example of how to use this package
 
-var { fixJSsAtPath, transformLeakingGlobalsVars } = require('@anshckr/fix-js');
-var dependenciesObj = require("./static/dependencies.json");
+var { fixJSsAtPath, transformLeakingGlobalsVars } = require('../index');
+var dependenciesObj = require("./dependencies.json");
 
 var directoryPath = "/Users/Anshul/railsApp/public/javascripts";
 var ignoreFilesRegex = /^socket|polyfill|app-parser|prettify|run_prettify|jquery|\.min\.js/;

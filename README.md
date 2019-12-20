@@ -10,6 +10,8 @@ for (i = 0; i < 10; i++) {....}
 
 In the above code if we don't declare `i` in the upper scope like `var i` then `i` becomes a global leak
 
+The utility will declare these leaking variables
+
 ## Installation
 
 Using npm:
@@ -65,10 +67,10 @@ This package exposes the following utilities ->
  */
 ```
 
-## Usage [refer the sample.js]
+## Usage [refer the example folder]
 
 ## License
 
-fix-js is freely distributable under the terms of the [MIT license](https://github.com/moment/moment/blob/develop/LICENSE).
+@anshckr/fix-js is freely distributable under the terms of the [MIT license](https://github.com/anshckr/fix-js/blob/master/LICENSE).
 [license-image]: http://img.shields.io/badge/license-MIT-blue.svg?style=flat
 [license-url]: LICENSE
