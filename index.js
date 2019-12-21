@@ -3,14 +3,13 @@
 var fs = require('fs');
 var path = require('path');
 var acorn = require('acorn');
-var walk = require("acorn-walk");
+var findGlobals = require('acorn-globals');
 
 // In newer Node.js versions where process is already global this isn't necessary.
 var process = require("process");
 
 // utils
 var findGlobalsExposed = require('./utils/findGlobalsExposed');
-var findGlobalDeps = require('./utils/findGlobalDeps');
 
 // global objects
 var constants = require("./static/constants.json");
@@ -66,7 +65,7 @@ function fillAllGlobalsConstants(filePath) {
 
   var globalsExposed = Object.keys(findGlobalsExposed(ast));
 
-  var dependencies = findGlobalDeps(ast)
+  var dependencies = findGlobals(ast)
     .filter(dep => allExternalDeps.indexOf(dep.name) === -1)
     .filter(dep => ignoreableExternalDeps.indexOf(dep.name) === -1);
 
@@ -86,7 +85,7 @@ function executeTransformerWithDeps(filePath) {
     loc: true
   });
 
-  var dependencies = findGlobalDeps(ast)
+  var dependencies = findGlobals(ast)
     .filter(dep => allExternalDeps.indexOf(dep.name) === -1)
     .filter(dep => ignoreableExternalDeps.indexOf(dep.name) === -1);
 
