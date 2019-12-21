@@ -4,7 +4,7 @@ var fs = require('fs');
 var path = require('path');
 var acorn = require('acorn');
 var walk = require("acorn-walk");
-var _ = require('underscore');
+
 // In newer Node.js versions where process is already global this isn't necessary.
 var process = require("process");
 
@@ -146,8 +146,8 @@ function fixJSsAtPath(dirPath, paramsIgnoreFilesRegex, paramsIgnoreFoldersRegex,
       throw new Error('paramsIgnoreFoldersRegex should be a RegExp');
     }
 
-    if (paramsStartPointSCSSs.constructor !== Array) {
-      throw new Error('paramsStartPointSCSSs should be an Array');
+    if (paramsIgnoreableExternalDeps.constructor !== Array) {
+      throw new Error('paramsIgnoreableExternalDeps should be an Array');
     }
 
     if (transformer.constructor !== Function) {

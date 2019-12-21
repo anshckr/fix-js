@@ -1,6 +1,6 @@
 var fs = require('fs');
 var jscodeshift = require('jscodeshift');
-var _ = require('underscore');
+var _ = require('lodash');
 
 var j = jscodeshift;
 
@@ -71,7 +71,7 @@ var insertObjectProperty = (closestScopeCollec, depName) => {
     var depUsageCollec = closestScopeCollec.find(j.Identifier, { name: depName })
       .filter(path => path.parentPath.value.type !== "Property")
       .filter(path => !['params'].includes(path.parentPath.name))
-      .filter(path => !_.pluck(path.parentPath.scope.path.get('params').value, 'name').includes(depName));
+      .filter(path => !_.map(path.parentPath.scope.path.get('params').value, 'name').includes(depName));
 
     var [depUsagePathsNonVariableDeclarations, depUsagePathsVariableDeclarations] = _.partition(depUsageCollec.paths(), path => path.parentPath.value.type !== "VariableDeclarator")
 
@@ -182,6 +182,14 @@ var handleScopeByType = (closestScopeCollec, depName, filePath) => {
  * @return     {<String>}  { Transformed string to write to the file }
  */
 module.exports = (filePath, dependencies) => {
+  if (filePath.constructor !== String) {
+    throw new Error('filePath should be a String');
+  }
+
+  if (dependencies.constructor !== Array) {
+    throw new Error('dependencies should be an Array');
+  }
+
   var source = fs.readFileSync(filePath, { encoding: 'utf8' });
 
   var root = j(source);
@@ -191,7 +199,7 @@ module.exports = (filePath, dependencies) => {
   dependencies.forEach(({ name, nodes }) => {
     console.log('Dependency - %s\n', name);
 
-    var nodesStart = _.pluck(nodes, 'start');
+    var nodesStart = _.map(nodes, 'start');
 
     var nodePathsCollection = root.find(j.Identifier, path => name === path.name && nodesStart.includes(path.start));
 
