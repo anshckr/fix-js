@@ -67,7 +67,9 @@ This package exposes the following utilities ->
  */
 ```
 
-## Usage [refer the example folder]
+## Usage
+
+Refer the [example folder](https://github.com/anshckr/fix-js/tree/master/example)
 
 ## 🤝 Contributing
 
