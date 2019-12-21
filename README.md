@@ -10,7 +10,7 @@ for (i = 0; i < 10; i++) {....}
 
 In the above code if we don't declare `i` in the upper scope like `var i` then `i` becomes a global leak
 
-The utility will declare these leaking variables
+The utility will declare these types leaking variables
 
 ## Installation
 
@@ -41,11 +41,11 @@ This package exposes the following utilities ->
 /**
  * { Transforms all the JS files at the dirPath }
  *
- * @param      {<string>}    dirPath                                The directory where you want to run the transform at
+ * @param      {<String>}    dirPath                                The directory where you want to run the transform at
  * @param      {<Regex>}     paramsIgnoreFilesRegex                 Regular expression to match file names to ignore during transform
  * @param      {<Regex>}     paramsIgnoreFoldersRegex               Regular expression to match folder names to ignore during transform
  * @param      {<Function>}  transformer                            The transformer which will modify the JS files
- * @param      {<Array>}     [paramsIgnoreableExternalDeps=[]]      Array of depencies to ignore during transform
+ * @param      {<Array>}     [paramsIgnoreableExternalDeps=[]]      Array of dependencies to ignore during transform
  */
 
 2) transformLeakingGlobalsVars
@@ -53,7 +53,7 @@ This package exposes the following utilities ->
  * { transformLeakingGlobalsVars: Transformer to fix all the leaking globals from a JS file }
  *
  * @param      {<String>}  filePath      Path of the file to fix
- * @param      {<Array>}   dependencies  Array of Dependencies for the file at filePath
+ * @param      {<Array>}   dependencies  Array of dependencies for the file at filePath
  * @return     {<String>}  { Transformed string to write to the file }
  */
 
@@ -68,6 +68,14 @@ This package exposes the following utilities ->
 ```
 
 ## Usage [refer the example folder]
+
+## 🤝 Contributing
+
+Contributions, issues and feature requests are welcome!<br />Feel free to check [issues page](https://github.com/anshckr/fix-js/issues). You can also take a look at the [contributing guide](https://github.com/anshckr/fix-js/blob/master/CONTRIBUTING.md).
+
+## Show your support
+
+Give a ⭐️ if this project helped you!
 
 ## License
 
