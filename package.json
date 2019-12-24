@@ -1,6 +1,6 @@
 {
   "name": "@anshckr/fix-js",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "Fix JS code",
   "main": "index.js",
   "scripts": {
