@@ -9,11 +9,11 @@ var j = jscodeshift;
 /**
  * { Transformer to fix all the unused assigned variables from a JS file }
  *
- * @param      {<String>}  filePath      Path of the file to fix
- * @param      {<Array>}   dependencies  Array of Dependencies for the file at filePath 
+ * @param      {<String>}  filePath           Path of the file to fix
+ * @param      {<Array>}  [dependencies=[]]   Array of Dependencies for the file at filePath
  * @return     {<String>}  { Transformed string to write to the file }
  */
-module.exports = (filePath, dependencies) => {
+module.exports = (filePath, dependencies = []) => {
   if (filePath.constructor !== String) {
     throw new Error('filePath should be a String');
   }

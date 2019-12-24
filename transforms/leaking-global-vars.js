@@ -6,6 +6,10 @@ var findGlobals = require('acorn-globals');
 
 var j = jscodeshift;
 
+// global objects
+var constants = require("../static/constants.json");
+var allExternalDeps = Object.keys(constants).reduce((accumulator, key) => accumulator.concat(constants[key]), []);
+
 var getAllAncestors = (path) => {
   var results = [];
   var parent = path.parent;
@@ -51,10 +55,19 @@ var constructMemberExpressionForObjectKey = (closestScopeCollec, property) => {
     );
   }
 
-  return j.memberExpression(
-    constructMemberExpressionForObjectKey(closestScopeCollec.closest(j.ObjectExpression), closestScopeCollec.paths()[0].parentPath.value.key.name),
-    j.identifier(property)
-  );
+  if (parentNodePath.type === 'Property') {
+    return j.memberExpression(
+      constructMemberExpressionForObjectKey(closestScopeCollec.closest(j.ObjectExpression), parentNodePath.key.name),
+      j.identifier(property)
+    );
+  }
+
+  if (parentNodePath.type === 'AssignmentExpression') {
+    return j.memberExpression(
+      parentNodePath.left,
+      j.identifier(property)
+    );
+  }
 };
 
 var insertObjectProperty = (closestScopeCollec, depName) => {
@@ -179,8 +192,8 @@ var handleScopeByType = (closestScopeCollec, depName, filePath) => {
 /**
  * { Transformer to fix all the leaking globals from a JS file }
  *
- * @param      {<String>}  filePath      Path of the file to fix
- * @param      {<Array>}   dependencies  Array of Dependencies for the file at filePath 
+ * @param      {<String>}  filePath           Path of the file to fix
+ * @param      {<Array>}  [dependencies=[]]   Array of Dependencies for the file at filePath
  * @return     {<String>}  { Transformed string to write to the file }
  */
 module.exports = (filePath, dependencies = []) => {
@@ -201,7 +214,8 @@ module.exports = (filePath, dependencies = []) => {
       loc: true
     });
 
-    dependencies = findGlobals(ast);
+    dependencies = findGlobals(ast)
+      .filter(dep => allExternalDeps.indexOf(dep.name) === -1);
   }
 
   var root = j(source);
@@ -218,21 +232,6 @@ module.exports = (filePath, dependencies = []) => {
     if (!nodePathsCollection.length) {
       console.log('\nFixing FileName - %s\nNo matching nodes found for dependency - %s\n', filePath, name);
       return;
-    }
-
-    // fix only dependencies with AssignmentExpression, ex: a = 1;
-    var identifiersWithinAssignExpCollection = nodePathsCollection
-      .filter(path => path.parentPath.value.type === "AssignmentExpression");
-
-    if (identifiersWithinAssignExpCollection.length === nodePathsCollection.length) {
-      var standaloneExpressionStatement = identifiersWithinAssignExpCollection.closest(j.ExpressionStatement);
-
-      // only one references to the variable and that too not at Program level then directly remove its expression
-      if (standaloneExpressionStatement.length && standaloneExpressionStatement.closestScope().paths()[0].value.type !== 'Program') {
-        standaloneExpressionStatement.paths()[0].replace();
-
-        return;
-      }
     }
 
     // group nodes with common scope together

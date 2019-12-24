@@ -39,30 +39,30 @@ This package exposes the following utilities ->
 
 1) fixJSsAtPath
 /**
- * { Transforms all the JS files at the dirPath }
+ * { fixJSsAtPath: Transforms all the JS files at the dirPath }
  *
- * @param      {<String>}    dirPath                                The directory where you want to run the transform at
- * @param      {<Regex>}     paramsIgnoreFilesRegex                 Regular expression to match file names to ignore during transform
- * @param      {<Regex>}     paramsIgnoreFoldersRegex               Regular expression to match folder names to ignore during transform
- * @param      {<Function>}  transformer                            The transformer which will modify the JS files
- * @param      {<Array>}     [paramsIgnoreableExternalDeps=[]]      Array of dependencies to ignore during transform
+ * @param      {<String>}  dirPath                            The directory where you want to run the transform at
+ * @param      {<Function>}  transformer                        The transformer which will modify the JS files
+ * @param      {<Regex>}  [paramsIgnoreFilesRegex=/$^/]      Regular expression to match file names to ignore during transform
+ * @param      {<Regex>}  [paramsIgnoreFoldersRegex=/$^/]    Regular expression to match folder names to ignore during transform
+ * @param      {<Array>}  [paramsIgnoreableExternalDeps=[]]  Array of dependencies to ignore during transform
  */
 
 2) transformLeakingGlobalsVars
 /**
- * { transformLeakingGlobalsVars: Transformer to fix all the leaking globals from a JS file }
+ * { Transformer to fix all the leaking globals from a JS file }
  *
- * @param      {<String>}  filePath      Path of the file to fix
- * @param      {<Array>}   dependencies  Array of dependencies for the file at filePath
+ * @param      {<String>}  filePath           Path of the file to fix
+ * @param      {<Array>}  [dependencies=[]]   Array of Dependencies for the file at filePath
  * @return     {<String>}  { Transformed string to write to the file }
  */
 
 3) transformUnusedAssignedVars
 /**
- * { transformUnusedAssignedVars: Transformer to fix all the unused assigned variables from a JS file }
+ * { Transformer to fix all the unused assigned variables from a JS file }
  *
- * @param      {<String>}  filePath      Path of the file to fix
- * @param      {<Array>}   dependencies  Array of Dependencies for the file at filePath
+ * @param      {<String>}  filePath           Path of the file to fix
+ * @param      {<Array>}  [dependencies=[]]   Array of Dependencies for the file at filePath
  * @return     {<String>}  { Transformed string to write to the file }
  */
 ```

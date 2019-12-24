@@ -4,18 +4,21 @@ var { fixJSsAtPath, transformLeakingGlobalsVars } = require('../index');
 var dependenciesObj = require("./dependencies.json");
 
 var directoryPath = "/Users/Anshul/railsApp/public/javascripts";
-var ignoreFilesRegex = /^socket|polyfill|app-parser|prettify|run_prettify|jquery|\.min\.js/;
-var ignoreFoldersRegex = /test|\/libraries|\/lib|static\/plugins/;
+var ignoreFilesRegex = /$^/;
+var ignoreFoldersRegex = /$^/;
 var ignoreableExternalDeps = Object.keys(dependenciesObj).reduce((accumulator, key) => accumulator.concat(dependenciesObj[key]), []);
 
 /**
  * { Example usage of fixJSsAtPath }
  */
-fixJSsAtPath(directoryPath, ignoreFilesRegex, ignoreFoldersRegex, transformLeakingGlobalsVars, ignoreableExternalDeps);
+// with minimal required params
+fixJSsAtPath(directoryPath, transformLeakingGlobalsVars);
+// with all params
+fixJSsAtPath(directoryPath, transformLeakingGlobalsVars, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
 
-/**
- * { Example usage of transformLeakingGlobalsVars }
- */
+// /**
+//  * { Example usage of transformLeakingGlobalsVars }
+//  */
 var dependencies = ['jQuery'];
 
 // with specific dependencies to fix
@@ -23,10 +26,9 @@ transformLeakingGlobalsVars("/Users/Anshul/railsApp/public/javascripts/admin.js"
 // without dependencies, will detect all the globals in the file and fix them
 transformLeakingGlobalsVars("/Users/Anshul/railsApp/public/javascripts/admin.js");
 
-
-/**
- * { Example usage of transformUnusedAssignedVars }
- */
+// /**
+//  * { Example usage of transformUnusedAssignedVars }
+//  */
 
 // with specific dependencies to fix
 transformUnusedAssignedVars("/Users/Anshul/railsApp/public/javascripts/admin.js", dependencies);

@@ -91,7 +91,11 @@ function executeTransformerWithDeps(filePath) {
 
   dependencies = [...new Set(dependencies.filter(e => allGlobalsExposed.indexOf(e.name) === -1))];
 
-  return this(filePath, dependencies);
+  var results = this(filePath, dependencies);
+
+  if (results) {
+    fs.writeFileSync(filePath, results.replace(/;;/g, ';'));
+  }
 }
 
 function findGlobalsAtPath(dirPath) {
@@ -125,16 +129,20 @@ function executeTransformer(filePath) {
 /**
  * { fixJSsAtPath: Transforms all the JS files at the dirPath }
  *
- * @param      {<string>}    dirPath                                The directory where you want to run the transform at
- * @param      {<Regex>}     paramsIgnoreFilesRegex                 Regular expression to match file names to ignore during transform
- * @param      {<Regex>}     paramsIgnoreFoldersRegex               Regular expression to match folder names to ignore during transform
- * @param      {<Function>}  transformer                            The transformer which will modify the JS files
- * @param      {<Array>}     [paramsIgnoreableExternalDeps=[]]      Array of depencies to ignore during transform
+ * @param      {<String>}  dirPath                            The directory where you want to run the transform at
+ * @param      {<Function>}  transformer                        The transformer which will modify the JS files
+ * @param      {<Regex>}  [paramsIgnoreFilesRegex=/$^/]      Regular expression to match file names to ignore during transform
+ * @param      {<Regex>}  [paramsIgnoreFoldersRegex=/$^/]    Regular expression to match folder names to ignore during transform
+ * @param      {<Array>}  [paramsIgnoreableExternalDeps=[]]  Array of dependencies to ignore during transform
  */
-function fixJSsAtPath(dirPath, paramsIgnoreFilesRegex, paramsIgnoreFoldersRegex, transformer, paramsIgnoreableExternalDeps = []) {
+function fixJSsAtPath(dirPath, transformer, paramsIgnoreFilesRegex = /$^/, paramsIgnoreFoldersRegex = /$^/, paramsIgnoreableExternalDeps = []) {
   try {
     if (dirPath.constructor !== String) {
       throw new Error('dirPath should be a String');
+    }
+
+    if (transformer.constructor !== Function) {
+      throw new Error('transformer should be a Function');
     }
 
     if (paramsIgnoreFilesRegex.constructor !== RegExp) {
@@ -147,10 +155,6 @@ function fixJSsAtPath(dirPath, paramsIgnoreFilesRegex, paramsIgnoreFoldersRegex,
 
     if (paramsIgnoreableExternalDeps.constructor !== Array) {
       throw new Error('paramsIgnoreableExternalDeps should be an Array');
-    }
-
-    if (transformer.constructor !== Function) {
-      throw new Error('transformer should be a Function');
     }
 
     ignoreFilesRegex = paramsIgnoreFilesRegex;
