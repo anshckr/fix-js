@@ -15,15 +15,18 @@ The utility will declare these types leaking variables
 ## Installation
 
 Using npm:
+
 ```shell
 $ npm i -g npm
 $ npm i @anshckr/fix-js
 ```
+
 Note: add --save if you are using npm < 5.0.0
 
 In Node.js:
+
 ```js
-// cherry-pick methods for smaller browserify/rollup/webpack bundles
+
 var {
   fixJSsAtPath,
   transformLeakingGlobalsVars,
@@ -41,11 +44,11 @@ This package exposes the following utilities ->
 /**
  * { fixJSsAtPath: Transforms all the JS files at the dirPath }
  *
- * @param      {<String>}  dirPath                            The directory where you want to run the transform at
- * @param      {<Function>}  transformer                        The transformer which will modify the JS files
- * @param      {<Regex>}  [paramsIgnoreFilesRegex=/$^/]      Regular expression to match file names to ignore during transform
- * @param      {<Regex>}  [paramsIgnoreFoldersRegex=/$^/]    Regular expression to match folder names to ignore during transform
- * @param      {<Array>}  [paramsIgnoreableExternalDeps=[]]  Array of dependencies to ignore during transform
+ * @param      {String}     dirPath                            The directory where you want to run the transform at
+ * @param      {Function}   transformer                        The transformer which will modify the JS files
+ * @param      {Regex}      [paramsIgnoreFilesRegex=/$^/]      Regular expression to match file names to ignore during transform
+ * @param      {Regex}      [paramsIgnoreFoldersRegex=/$^/]    Regular expression to match folder names to ignore during transform
+ * @param      {Array}      [paramsIgnoreableExternalDeps=[]]  Array of dependencies to ignore during transform
  */
 
 2) transformLeakingGlobalsVars
