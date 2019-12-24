@@ -23,6 +23,8 @@ var dependencies = ['jQuery'];
 
 // with specific dependencies to fix
 transformLeakingGlobalsVars("/Users/Anshul/railsApp/public/javascripts/admin.js", dependencies);
+// will update the file instead of returning the modified contents
+transformLeakingGlobalsVars("/Users/Anshul/railsApp/public/javascripts/admin.js", dependencies, true);
 // without dependencies, will detect all the globals in the file and fix them
 transformLeakingGlobalsVars("/Users/Anshul/railsApp/public/javascripts/admin.js");
 
@@ -32,5 +34,7 @@ transformLeakingGlobalsVars("/Users/Anshul/railsApp/public/javascripts/admin.js"
 
 // with specific dependencies to fix
 transformUnusedAssignedVars("/Users/Anshul/railsApp/public/javascripts/admin.js", dependencies);
+// will update the file instead of returning the modified contents
+transformUnusedAssignedVars("/Users/Anshul/railsApp/public/javascripts/admin.js", dependencies, true);
 // without dependencies, will detect all the globals in the file and fix them
 transformUnusedAssignedVars("/Users/Anshul/railsApp/public/javascripts/admin.js");

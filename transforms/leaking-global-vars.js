@@ -3,6 +3,7 @@ var jscodeshift = require('jscodeshift');
 var _ = require('lodash');
 var acorn = require('acorn');
 var findGlobals = require('acorn-globals');
+var walk = require('acorn-walk');
 
 var j = jscodeshift;
 
@@ -192,11 +193,12 @@ var handleScopeByType = (closestScopeCollec, depName, filePath) => {
 /**
  * { Transformer to fix all the leaking globals from a JS file }
  *
- * @param      {<String>}  filePath           Path of the file to fix
- * @param      {<Array>}  [dependencies=[]]   Array of Dependencies for the file at filePath
- * @return     {<String>}  { Transformed string to write to the file }
+ * @param      {String}     filePath                  Path of the file to fix
+ * @param      {Array}      [dependencies=[]]         Array of Dependencies for the file at filePath
+ * @param      {Boolean}    [updateInplace=false]     Whether to update the file or not
+ * @return     {String}     { Transformed string to write to the file }
  */
-module.exports = (filePath, dependencies = []) => {
+module.exports = (filePath, dependencies = [], updateInplace = false) => {
   if (filePath.constructor !== String) {
     throw new Error('filePath should be a String');
   }
@@ -207,15 +209,36 @@ module.exports = (filePath, dependencies = []) => {
 
   var source = fs.readFileSync(filePath, { encoding: 'utf8' });
 
+  var ast = acorn.parse(source, {
+    loc: true
+  });
+
   if (!dependencies.length) {
     // get the global dependencies and fix them if no dependencies are passed
 
-    var ast = acorn.parse(source, {
-      loc: true
-    });
-
     dependencies = findGlobals(ast)
       .filter(dep => allExternalDeps.indexOf(dep.name) === -1);
+  } else {
+    dependencies = dependencies.map(function(dep) {
+      if (dep.constructor === String) {
+        var nodes = [];
+
+        // walk full AST to get all references to dep
+        walk.full(ast, function(node, state, type) {
+          if (type === 'Identifier' && node.name === dep) {
+            nodes.push(node);
+          }
+        });
+
+        return { name: dep, nodes: nodes };
+      }
+
+      if (dep.constructor === Object && dep.hasOwnProperty('name') && dep.hasOwnProperty('nodes')) {
+        return dep;
+      }
+
+      throw new Error('Invalid element passed in dependencies Array');
+    });
   }
 
   var root = j(source);
@@ -305,5 +328,11 @@ module.exports = (filePath, dependencies = []) => {
     });
   });
 
-  return root.toSource();
+  var results = root.toSource();
+
+  if (updateInplace) {
+    fs.writeFileSync(filePath, results.replace(/;;/g, ';'));
+  }
+
+  return results;
 }

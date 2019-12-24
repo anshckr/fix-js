@@ -52,18 +52,20 @@ This package exposes the following utilities ->
 /**
  * { Transformer to fix all the leaking globals from a JS file }
  *
- * @param      {<String>}  filePath           Path of the file to fix
- * @param      {<Array>}  [dependencies=[]]   Array of Dependencies for the file at filePath
- * @return     {<String>}  { Transformed string to write to the file }
+ * @param      {String}     filePath                  Path of the file to fix
+ * @param      {Array}      [dependencies=[]]         Array of Dependencies for the file at filePath
+ * @param      {Boolean}    [updateInplace=false]     Whether to update the file or not
+ * @return     {String}     { Transformed string }
  */
 
 3) transformUnusedAssignedVars
 /**
  * { Transformer to fix all the unused assigned variables from a JS file }
  *
- * @param      {<String>}  filePath           Path of the file to fix
- * @param      {<Array>}  [dependencies=[]]   Array of Dependencies for the file at filePath
- * @return     {<String>}  { Transformed string to write to the file }
+ * @param      {String}   filePath                Path of the file to fix
+ * @param      {Array}    [dependencies=[]]       Array of Dependencies for the file at filePath
+ * @param      {Boolean}  [updateInplace=false]   Whether to update the file or not
+ * @return     {String}   { Transformed string }
  */
 ```
 
