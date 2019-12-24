@@ -1,6 +1,8 @@
 var fs = require('fs');
 var jscodeshift = require('jscodeshift');
 var _ = require('lodash');
+var acorn = require('acorn');
+var findGlobals = require('acorn-globals');
 
 var j = jscodeshift;
 
@@ -181,7 +183,7 @@ var handleScopeByType = (closestScopeCollec, depName, filePath) => {
  * @param      {<Array>}   dependencies  Array of Dependencies for the file at filePath 
  * @return     {<String>}  { Transformed string to write to the file }
  */
-module.exports = (filePath, dependencies) => {
+module.exports = (filePath, dependencies = []) => {
   if (filePath.constructor !== String) {
     throw new Error('filePath should be a String');
   }
@@ -191,6 +193,16 @@ module.exports = (filePath, dependencies) => {
   }
 
   var source = fs.readFileSync(filePath, { encoding: 'utf8' });
+
+  if (!dependencies.length) {
+    // get the global dependencies and fix them if no dependencies are passed
+
+    var ast = acorn.parse(source, {
+      loc: true
+    });
+
+    dependencies = findGlobals(ast);
+  }
 
   var root = j(source);
 

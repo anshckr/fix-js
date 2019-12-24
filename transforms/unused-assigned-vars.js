@@ -1,6 +1,8 @@
 var fs = require('fs');
 var jscodeshift = require('jscodeshift');
 var _ = require('lodash');
+var acorn = require('acorn');
+var findGlobals = require('acorn-globals');
 
 var j = jscodeshift;
 
@@ -21,6 +23,16 @@ module.exports = (filePath, dependencies) => {
   }
 
   var source = fs.readFileSync(filePath, { encoding: 'utf8' });
+
+  if (!dependencies.length) {
+    // get the global dependencies and fix them if no dependencies are passed
+
+    var ast = acorn.parse(source, {
+      loc: true
+    });
+
+    dependencies = findGlobals(ast);
+  }
 
   var root = j(source);
 
