@@ -34,7 +34,7 @@ let allGlobalsExposed = [];
 function recursiveDirFilesIterator(dirPath, cb) {
   const files = fs.readdirSync(dirPath, { withFileTypes: true });
 
-  files.forEach((file, index) => {
+  files.forEach((file) => {
     const filePath = path.resolve(dirPath, file.name);
 
     if (file.isFile()) {
@@ -98,10 +98,10 @@ function executeTransformerWithDeps(filePath) {
 }
 
 function findGlobalsAtPath(dirPath) {
-  try {
-    recursiveDirFilesIterator(dirPath, fillAllGlobalsConstants);
+  return new Promise((resolve, reject) => {
+    try {
+      recursiveDirFilesIterator(dirPath, fillAllGlobalsConstants);
 
-    return new Promise((resolve, reject) => {
       allGlobalDeps = [...new Set(allGlobalDeps)];
       allGlobalsExposed = [...new Set(allGlobalsExposed)];
 
@@ -109,29 +109,29 @@ function findGlobalsAtPath(dirPath) {
         allGlobalDeps: [...new Set(allGlobalDeps)],
         allGlobalsExposed: [...new Set(allGlobalsExposed)]
       });
-    });
-  } catch (err) {
-    // An error occurred
-    console.error('Some Error Occured: ', err);
-    process.exit(1);
-  }
+    } catch (err) {
+      reject(err);
+    }
+  });
 }
 
-function executeTransformer(filePath) {
-  const results = this(filePath);
+// function executeTransformer(filePath) {
+//   const results = this(filePath);
 
-  if (results) {
-    fs.writeFileSync(filePath, results.replace(/;;/g, ';'));
-  }
-}
+//   if (results) {
+//     fs.writeFileSync(filePath, results.replace(/;;/g, ';'));
+//   }
+// }
 
 /**
  * { fixJSsAtPath: Transforms all the JS files at the dirPath }
  *
- * @param      {<String>}  dirPath                            The directory where you want to run the transform at
- * @param      {<Function>}  transformer                        The transformer which will modify the JS files
- * @param      {<Regex>}  [paramsIgnoreFilesRegex=/$^/]      Regular expression to match file names to ignore during transform
- * @param      {<Regex>}  [paramsIgnoreFoldersRegex=/$^/]    Regular expression to match folder names to ignore during transform
+ * @param      {<String>}  dirPath                           The directory where you want to run the transform at
+ * @param      {<Function>}  transformer                     The transformer which will modify the JS files
+ * @param      {<Regex>}  [paramsIgnoreFilesRegex=/$^/]      Regular expression to match filenames
+ * to ignore during transform
+ * @param      {<Regex>}  [paramsIgnoreFoldersRegex=/$^/]    Regular expression to match folder names
+ * to ignore during transform
  * @param      {<Array>}  [paramsIgnoreableExternalDeps=[]]  Array of dependencies to ignore during transform
  */
 function fixJSsAtPath(
@@ -166,9 +166,15 @@ function fixJSsAtPath(
     ignoreFoldersRegex = paramsIgnoreFoldersRegex;
     ignoreableExternalDeps = ignoreableExternalDeps.concat(paramsIgnoreableExternalDeps);
 
-    findGlobalsAtPath(dirPath).then((allGlobalsObj) => {
-      recursiveDirFilesIterator(dirPath, executeTransformerWithDeps.bind(transformer));
-    });
+    findGlobalsAtPath(dirPath)
+      .then(() => {
+        recursiveDirFilesIterator(dirPath, executeTransformerWithDeps.bind(transformer));
+      })
+      .catch((err) => {
+        // An error occurred
+        console.error('Some Error Occured: ', err);
+        process.exit(1);
+      });
   } catch (err) {
     console.log(err);
   }

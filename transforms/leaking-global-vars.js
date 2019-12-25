@@ -25,8 +25,6 @@ const getAllAncestors = (path) => {
   return results;
 };
 
-const allCommonScopeTypes = [];
-
 const insertVarDeclaration = (blockStatementNode, depName) => {
   const variableDeclaration = blockStatementNode.body.find((node) => node.type === 'VariableDeclaration');
 
@@ -40,7 +38,7 @@ const insertVarDeclaration = (blockStatementNode, depName) => {
   }
 };
 
-var constructMemberExpressionForObjectKey = (closestScopeCollec, property) => {
+const constructMemberExpressionForObjectKey = (closestScopeCollec, property) => {
   const parentNodePath = closestScopeCollec.paths()[0].parentPath.value;
 
   if (parentNodePath.type === 'VariableDeclarator') {
@@ -57,9 +55,11 @@ var constructMemberExpressionForObjectKey = (closestScopeCollec, property) => {
   if (parentNodePath.type === 'AssignmentExpression') {
     return j.memberExpression(parentNodePath.left, j.identifier(property));
   }
+
+  return new Error("Unhandled node type '%s' in constructMemberExpressionForObjectKey", parentNodePath.type);
 };
 
-var insertObjectProperty = (closestScopeCollec, depName) => {
+const insertObjectProperty = (closestScopeCollec, depName) => {
   if (closestScopeCollec.paths()[0].scope.isGlobal) {
     const objectExpressionNode = closestScopeCollec.nodes()[0];
 
@@ -124,6 +124,7 @@ const handleScopeByType = (closestScopeCollec, depName, filePath) => {
   }
 
   const scopeType = closestScopeCollec.get('type').value;
+  let blockStatementNode;
 
   switch (scopeType) {
     case 'Program': {
@@ -145,7 +146,7 @@ const handleScopeByType = (closestScopeCollec, depName, filePath) => {
       break;
     }
     case 'BlockStatement': {
-      var blockStatementNode = closestScopeCollec.nodes()[0];
+      [blockStatementNode] = closestScopeCollec.nodes();
 
       insertVarDeclaration(blockStatementNode, depName);
 
@@ -153,7 +154,7 @@ const handleScopeByType = (closestScopeCollec, depName, filePath) => {
     }
     case 'FunctionDeclaration':
     case 'FunctionExpression': {
-      var blockStatementNode = closestScopeCollec
+      blockStatementNode = closestScopeCollec
         .find(j.BlockStatement)
         .paths()
         .find((path) => path.parent === closestScopeCollec.paths()[0]).node;
@@ -215,7 +216,11 @@ module.exports = (filePath, dependencies = [], updateInplace = false) => {
         return { name: dep, nodes };
       }
 
-      if (dep.constructor === Object && dep.hasOwnProperty('name') && dep.hasOwnProperty('nodes')) {
+      if (
+        dep.constructor === Object &&
+        Object.hasOwnProperty.call(dep, 'name') &&
+        Object.hasOwnProperty.call(dep, 'nodes')
+      ) {
         return dep;
       }
 
@@ -247,12 +252,10 @@ module.exports = (filePath, dependencies = [], updateInplace = false) => {
       .groupBy(
         (path) =>
           j(path)
-          .closestScope()
-          .get(0).scope.path.value.start
+            .closestScope()
+            .get(0).scope.path.value.start
       )
       .value();
-
-    let isDeclaredAtProgramLevel = false;
 
     // var eachGroupHasAssignmentExp = true;
 
@@ -265,11 +268,9 @@ module.exports = (filePath, dependencies = [], updateInplace = false) => {
 
       const groupedCollection = j(nodePaths);
 
-      const closestScopeCollec = groupedCollection.closestScope(j.Node, { start: parseInt(start) });
+      const closestScopeCollec = groupedCollection.closestScope(j.Node, { start: parseInt(start, 10) });
 
       if (closestScopeCollec.paths()[0].value.type === 'Program') {
-        isDeclaredAtProgramLevel = true;
-
         insertAtScopeCollec = closestScopeCollec;
       }
     });
@@ -311,10 +312,10 @@ module.exports = (filePath, dependencies = [], updateInplace = false) => {
 
       const groupedCollection = j(nodePaths);
 
-      const closestScopeCollec = groupedCollection.closestScope(j.Node, { start: parseInt(start) });
+      const closestScopeNodeCollec = groupedCollection.closestScope(j.Node, { start: parseInt(start, 10) });
 
       // declare at each scope level
-      handleScopeByType(closestScopeCollec, name, filePath);
+      handleScopeByType(closestScopeNodeCollec, name, filePath);
     });
   });
 

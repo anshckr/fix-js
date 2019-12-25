@@ -5,10 +5,7 @@
     "es6": true
   },
   "extends": [
-    "prettier",
-    "airbnb-base"
-  ],
-  "plugins": [
+    "airbnb-base",
     "prettier"
   ],
   "globals": {
@@ -18,9 +15,37 @@
   "parserOptions": {
     "ecmaVersion": 2018
   },
+  "plugins": [
+    "prettier"
+  ],
   "rules": {
-    "prettier/prettier": "error",
-    "comma-dangle": ["error", "never"],
-    "no-tabs": ["error", { "allowIndentationTabs": true }]
+    "comma-dangle": [
+      "error",
+      "never"
+    ],
+    "import/no-cycle": "warn",
+    "import/no-extraneous-dependencies": [
+      "warn",
+      {
+        "devDependencies": true
+      }
+    ],
+    "import/no-unresolved": "error",
+    "max-len": [
+      "error",
+      {
+        "code": 120
+      }
+    ],
+    "no-tabs": [
+      "error",
+      {
+        "allowIndentationTabs": true
+      }
+    ],
+    "no-console": "off",
+    "no-plusplus": "off",
+    "no-param-reassign": "off",
+    "prettier/prettier": "error"
   }
 }

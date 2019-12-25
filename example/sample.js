@@ -1,6 +1,6 @@
 // Example of how to use this package
 
-const { fixJSsAtPath, transformLeakingGlobalsVars } = require('../index');
+const { fixJSsAtPath, transformLeakingGlobalsVars, transformUnusedAssignedVars } = require('../index');
 const dependenciesObj = require('./dependencies.json');
 
 const directoryPath = '/Users/Anshul/railsApp/public/javascripts';

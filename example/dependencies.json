@@ -1,4 +1,18 @@
 {
+  "browser": [
+    "ActiveXObject",
+    "RTCMultiConnection",
+    "XDomainRequest",
+    "chrome",
+    "google",
+    "grecaptcha",
+    "importScripts",
+    "mozRTCIceCandidate",
+    "mozRTCPeerConnection",
+    "mozRTCSessionDescription",
+    "webkitMediaStream",
+    "webkitRTCPeerConnection"
+  ],
   "html": [
     "__COUNTRIES",
     "__OS_NAME_CODE_MAPPING",
@@ -52,6 +66,23 @@
     "user_referral_reward",
     "workable_url"
   ],
+  "ignore": [
+    "webrtc",
+    "bodyDropzone",
+    "__toggleSuggestToolForm",
+    "PassExtensionDetails",
+    "cart_id",
+    "plan_id",
+    "changeReportBugName",
+    "Cookie",
+    "BrowserDetect",
+    "customTimestamp",
+    "LocalStorage",
+    "flashBlockDetect",
+    "Drawing",
+    "videojs",
+    "bsFeedback"
+  ],
   "libraries": [
     "$",
     "jQuery",
@@ -93,36 +124,5 @@
     "turnTunnel",
     "WebVTT",
     "Widgets"
-  ],
-  "browser": [
-    "ActiveXObject",
-    "RTCMultiConnection",
-    "XDomainRequest",
-    "chrome",
-    "google",
-    "grecaptcha",
-    "importScripts",
-    "mozRTCIceCandidate",
-    "mozRTCPeerConnection",
-    "mozRTCSessionDescription",
-    "webkitMediaStream",
-    "webkitRTCPeerConnection"
-  ],
-  "ignore": [
-    "webrtc",
-    "bodyDropzone",
-    "__toggleSuggestToolForm",
-    "PassExtensionDetails",
-    "cart_id",
-    "plan_id",
-    "changeReportBugName",
-    "Cookie",
-    "BrowserDetect",
-    "customTimestamp",
-    "LocalStorage",
-    "flashBlockDetect",
-    "Drawing",
-    "videojs",
-    "bsFeedback"
   ]
 }

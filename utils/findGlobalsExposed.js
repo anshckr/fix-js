@@ -31,6 +31,7 @@ function findExposedGlobals(ast) {
 
     for (let i = 0; i < body.length; ++i) {
       const stmt = body[i];
+      let record;
       switch (stmt.type) {
         // var foo = ...
         case 'VariableDeclaration':
@@ -38,7 +39,7 @@ function findExposedGlobals(ast) {
           break;
         // function foo() { ... }
         case 'FunctionDeclaration':
-          var record = makeRecord(stmt.id.name);
+          record = makeRecord(stmt.id.name);
           record.type = 'function';
           record.ast = stmt;
           record.isFunction = true;
@@ -58,12 +59,9 @@ function findExposedGlobals(ast) {
           break;
         case 'WhileStatement':
         case 'DoWhileStatement':
-        case 'ForInStatement':
-          scanBody(stmt.body, stmt.type);
-          break;
         case 'ExpressionStatement':
           if (scopeType === 'Program' && stmt.expression.type === 'AssignmentExpression') {
-            var record = makeRecord(stmt.expression.left.name);
+            record = makeRecord(stmt.expression.left.name);
             record.type = 'var';
             record.ast = stmt.expression.right;
             record.isFunction = !!(stmt.expression.right && stmt.expression.right.type === 'FunctionExpression');
