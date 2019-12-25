@@ -39,8 +39,6 @@ var {
 
 ### 1. `fixJSsAtPath` (Transforms all the JS files at the dirPath)
 
-> Parameters Accepted
-
 | Parameter | Type | Description |
 | :--- | :--- | :--- |
 | `dirPath`  | `String`  | **Required**. The directory path where you want to run the transform at  |
@@ -57,7 +55,7 @@ var {
 | `dependencies ` | `Function` | **Optional**. Array of dependencies you want to fix for the file at filePath. **Default:** All the global dependencies for the file |
 | `updateInplace ` | `Boolean` | **Optional**. Whether to update the file or not. **Default:** false |
 
-> Return Value
+**Returns**
 
 | Type | Description |
 | :--- | :--- | :--- |
@@ -71,7 +69,7 @@ var {
 | `dependencies ` | `Function` | **Optional**. Array of dependencies you want to fix for the file at filePath. **Default:** All the global dependencies for the file |
 | `updateInplace ` | `Boolean` | **Optional**. Whether to update the file or not. **Default:** false |
 
-> Return Value
+**Returns**
 
 | Type | Description |
 | :--- | :--- | :--- |
