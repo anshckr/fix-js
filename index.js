@@ -1,5 +1,5 @@
 const fs = require('fs');
-const path = require('path');
+const { resolve, extname } = require('path');
 const acorn = require('acorn');
 const findGlobals = require('acorn-globals');
 
@@ -7,7 +7,7 @@ const findGlobals = require('acorn-globals');
 const process = require('process');
 
 // utils
-const findGlobalsExposed = require('./utils/findGlobalsExposed');
+const findGlobalsExposed = require('./utils/find-globals-exposed');
 
 // global objects
 const constants = require('./static/constants.json');
@@ -32,13 +32,13 @@ let allGlobalDeps = [];
 let allGlobalsExposed = [];
 
 function recursiveDirFilesIterator(dirPath, cb) {
-  const files = fs.readdirSync(dirPath, { withFileTypes: true });
+  const files = fs.readdirSync(resolve(__dirname, dirPath), { withFileTypes: true });
 
   files.forEach((file) => {
-    const filePath = path.resolve(dirPath, file.name);
+    const filePath = resolve(dirPath, file.name);
 
     if (file.isFile()) {
-      if (ignoreFilesRegex.test(file.name) || path.extname(file.name) !== '.js') {
+      if (ignoreFilesRegex.test(file.name) || extname(file.name) !== '.js') {
         console.log("Skipping file: '%s'", filePath);
       } else {
         cb(filePath);
@@ -56,7 +56,7 @@ function recursiveDirFilesIterator(dirPath, cb) {
 // Loop through all the files in the temp directory
 function fillAllGlobalsConstants(filePath) {
   // console.log("Reading: '%s'", filePath);
-  const source = fs.readFileSync(filePath, { encoding: 'utf8' });
+  const source = fs.readFileSync(resolve(__dirname, filePath), { encoding: 'utf8' });
 
   const ast = acorn.parse(source, {
     loc: true
@@ -78,7 +78,7 @@ function fillAllGlobalsConstants(filePath) {
 // Loop through all the files in the temp directory
 function executeTransformerWithDeps(filePath) {
   // console.log("Reading: '%s'", filePath);
-  const source = fs.readFileSync(filePath, { encoding: 'utf8' });
+  const source = fs.readFileSync(resolve(__dirname, filePath), { encoding: 'utf8' });
 
   const ast = acorn.parse(source, {
     loc: true
@@ -93,24 +93,24 @@ function executeTransformerWithDeps(filePath) {
   const results = this(filePath, dependencies);
 
   if (results) {
-    fs.writeFileSync(filePath, results.replace(/;;/g, ';'));
+    fs.writeFileSync(resolve(__dirname, filePath), results.replace(/;;/g, ';'));
   }
 }
 
 function findGlobalsAtPath(dirPath) {
-  return new Promise((resolve, reject) => {
+  return new Promise((res, rej) => {
     try {
       recursiveDirFilesIterator(dirPath, fillAllGlobalsConstants);
 
       allGlobalDeps = [...new Set(allGlobalDeps)];
       allGlobalsExposed = [...new Set(allGlobalsExposed)];
 
-      resolve({
+      res({
         allGlobalDeps: [...new Set(allGlobalDeps)],
         allGlobalsExposed: [...new Set(allGlobalsExposed)]
       });
     } catch (err) {
-      reject(err);
+      rej(err);
     }
   });
 }

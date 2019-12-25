@@ -1,4 +1,4 @@
-function findExposedGlobals(ast) {
+function findGlobalsExposed(ast) {
   const out = {};
 
   function makeRecord(name) {
@@ -79,4 +79,4 @@ function findExposedGlobals(ast) {
   return out;
 }
 
-module.exports = findExposedGlobals;
+module.exports = findGlobalsExposed;

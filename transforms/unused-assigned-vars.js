@@ -1,4 +1,5 @@
 const fs = require('fs');
+const { resolve } = require('path');
 const jscodeshift = require('jscodeshift');
 const _ = require('lodash');
 const acorn = require('acorn');
@@ -23,7 +24,7 @@ module.exports = (filePath, updateInplace = false) => {
     throw new Error('filePath should be a String');
   }
 
-  const source = fs.readFileSync(filePath, { encoding: 'utf8' });
+  const source = fs.readFileSync(resolve(__dirname, filePath), { encoding: 'utf8' });
 
   const ast = acorn.parse(source, {
     loc: true
@@ -71,7 +72,7 @@ module.exports = (filePath, updateInplace = false) => {
   const results = root.toSource();
 
   if (updateInplace) {
-    fs.writeFileSync(filePath, results.replace(/;;/g, ';'));
+    fs.writeFileSync(resolve(__dirname, filePath), results.replace(/;;/g, ';'));
   }
 
   return results;
