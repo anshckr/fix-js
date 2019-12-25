@@ -6,34 +6,30 @@ const findGlobals = require('acorn-globals');
 
 const j = jscodeshift;
 
+// global objects
+const constants = require('../static/constants.json');
+
+const allExternalDeps = Object.keys(constants).reduce((accumulator, key) => accumulator.concat(constants[key]), []);
+
 /**
  * { Transformer to fix all the unused assigned variables from a JS file }
  *
  * @param      {String}   filePath                Path of the file to fix
- * @param      {Array}    [dependencies=[]]       Array of Dependencies for the file at filePath
  * @param      {Boolean}  [updateInplace=false]   Whether to update the file or not
  * @return     {String}   { Transformed string to write to the file }
  */
-module.exports = (filePath, dependencies = [], updateInplace = false) => {
+module.exports = (filePath, updateInplace = false) => {
   if (filePath.constructor !== String) {
     throw new Error('filePath should be a String');
   }
 
-  if (dependencies.constructor !== Array) {
-    throw new Error('dependencies should be an Array');
-  }
-
   const source = fs.readFileSync(filePath, { encoding: 'utf8' });
 
-  if (!dependencies.length) {
-    // get the global dependencies and fix them if no dependencies are passed
+  const ast = acorn.parse(source, {
+    loc: true
+  });
 
-    const ast = acorn.parse(source, {
-      loc: true
-    });
-
-    dependencies = findGlobals(ast);
-  }
+  const dependencies = findGlobals(ast).filter((dep) => allExternalDeps.indexOf(dep.name) === -1);
 
   const root = j(source);
 

@@ -66,7 +66,6 @@ var {
 | Parameter | Type | Description |
 | :--- | :--- | :--- |
 | `filePath `  | `String`  | **Required**. The file path you want to fix  |
-| `dependencies ` | `Function` | **Optional**. Array of dependencies you want to fix for the file at filePath. **Default:** All the global dependencies for the file |
 | `updateInplace ` | `Boolean` | **Optional**. Whether to update the file or not. **Default:** false |
 
 **Returns**
