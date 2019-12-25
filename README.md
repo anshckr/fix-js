@@ -37,40 +37,45 @@ var {
 
 ## API
 
-```
-This package exposes the following utilities ->
+### 1. `fixJSsAtPath` (Transforms all the JS files at the dirPath)
 
-1) fixJSsAtPath
-/**
- * { fixJSsAtPath: Transforms all the JS files at the dirPath }
- *
- * @param      {String}     dirPath                            The directory where you want to run the transform at
- * @param      {Function}   transformer                        The transformer which will modify the JS files
- * @param      {Regex}      [paramsIgnoreFilesRegex=/$^/]      Regular expression to match file names to ignore during transform
- * @param      {Regex}      [paramsIgnoreFoldersRegex=/$^/]    Regular expression to match folder names to ignore during transform
- * @param      {Array}      [paramsIgnoreableExternalDeps=[]]  Array of dependencies to ignore during transform
- */
+> Parameters Accepted
 
-2) transformLeakingGlobalsVars
-/**
- * { Transformer to fix all the leaking globals from a JS file }
- *
- * @param      {String}     filePath                  Path of the file to fix
- * @param      {Array}      [dependencies=[]]         Array of Dependencies for the file at filePath
- * @param      {Boolean}    [updateInplace=false]     Whether to update the file or not
- * @return     {String}     { Transformed string }
- */
+| Parameter | Type | Description |
+| :--- | :--- | :--- |
+| `dirPath`  | `String`  | **Required**. The directory path where you want to run the transform at  |
+| `transformer` | `Function` | **Required**. The transformer which will modify the JS files |
+| `paramsIgnoreFilesRegex` | `Regex` | **Optional**. Regular expression to match file names to ignore during transform. **Default:** /$^/ |
+| `paramsIgnoreFoldersRegex` | `Regex` | **Optional**. Regular expression to match folder names to ignore during transform. **Default:** /$^/ |
+| `paramsIgnoreableExternalDeps` | `Array` | **Optional**. Array of dependencies to ignore during transform. **Default:** [] |
 
-3) transformUnusedAssignedVars
-/**
- * { Transformer to fix all the unused assigned variables from a JS file }
- *
- * @param      {String}   filePath                Path of the file to fix
- * @param      {Array}    [dependencies=[]]       Array of Dependencies for the file at filePath
- * @param      {Boolean}  [updateInplace=false]   Whether to update the file or not
- * @return     {String}   { Transformed string }
- */
-```
+### 2. `transformLeakingGlobalsVars` (Transformer to fix all the leaking globals from a JS file)
+
+| Parameter | Type | Description |
+| :--- | :--- | :--- |
+| `filePath `  | `String`  | **Required**. The file path you want to fix  |
+| `dependencies ` | `Function` | **Optional**. Array of dependencies you want to fix for the file at filePath. **Default:** All the global dependencies for the file |
+| `updateInplace ` | `Boolean` | **Optional**. Whether to update the file or not. **Default:** false |
+
+> Return Value
+
+| Type | Description |
+| :--- | :--- | :--- |
+| `String` | Transformed file content |
+
+### 3. `transformUnusedAssignedVars` (Transformer to fix all the unused assigned variables from a JS file)
+
+| Parameter | Type | Description |
+| :--- | :--- | :--- |
+| `filePath `  | `String`  | **Required**. The file path you want to fix  |
+| `dependencies ` | `Function` | **Optional**. Array of dependencies you want to fix for the file at filePath. **Default:** All the global dependencies for the file |
+| `updateInplace ` | `Boolean` | **Optional**. Whether to update the file or not. **Default:** false |
+
+> Return Value
+
+| Type | Description |
+| :--- | :--- | :--- |
+| `String` | Transformed file content |
 
 ## Usage
 
