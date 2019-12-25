@@ -1,42 +1,41 @@
-'use strict';
-
-var fs = require('fs');
-var path = require('path');
-var acorn = require('acorn');
-var findGlobals = require('acorn-globals');
+const fs = require('fs');
+const path = require('path');
+const acorn = require('acorn');
+const findGlobals = require('acorn-globals');
 
 // In newer Node.js versions where process is already global this isn't necessary.
-var process = require("process");
+const process = require('process');
 
 // utils
-var findGlobalsExposed = require('./utils/findGlobalsExposed');
+const findGlobalsExposed = require('./utils/findGlobalsExposed');
 
 // global objects
-var constants = require("./static/constants.json");
+const constants = require('./static/constants.json');
 
 // transformers
-var transformLeakingGlobalsVars = require('./transforms/leaking-global-vars');
-var transformUnusedAssignedVars = require('./transforms/unused-assigned-vars');
+const transformLeakingGlobalsVars = require('./transforms/leaking-global-vars');
+const transformUnusedAssignedVars = require('./transforms/unused-assigned-vars');
 
 /* will be ignored in dependencies -- start */
 
-var allExternalDeps = Object.keys(constants).reduce((accumulator, key) => accumulator.concat(constants[key]), []);
+const allExternalDeps = Object.keys(constants).reduce((accumulator, key) => accumulator.concat(constants[key]), []);
 
-var ignoreableExternalDeps = [];
+let ignoreableExternalDeps = [];
 
-var ignoreFilesRegex, ignoreFoldersRegex;
+let ignoreFilesRegex;
+let ignoreFoldersRegex;
 
 /* will be ignored in dependencies -- end */
 
-var allGlobalDeps = [];
+let allGlobalDeps = [];
 
-var allGlobalsExposed = [];
+let allGlobalsExposed = [];
 
 function recursiveDirFilesIterator(dirPath, cb) {
-  var files = fs.readdirSync(dirPath, { withFileTypes: true });
+  const files = fs.readdirSync(dirPath, { withFileTypes: true });
 
-  files.forEach(function(file, index) {
-    var filePath = path.resolve(dirPath, file.name);
+  files.forEach((file, index) => {
+    const filePath = path.resolve(dirPath, file.name);
 
     if (file.isFile()) {
       if (ignoreFilesRegex.test(file.name) || path.extname(file.name) !== '.js') {
@@ -57,19 +56,19 @@ function recursiveDirFilesIterator(dirPath, cb) {
 // Loop through all the files in the temp directory
 function fillAllGlobalsConstants(filePath) {
   // console.log("Reading: '%s'", filePath);
-  var source = fs.readFileSync(filePath, { encoding: 'utf8' });
+  const source = fs.readFileSync(filePath, { encoding: 'utf8' });
 
-  var ast = acorn.parse(source, {
+  const ast = acorn.parse(source, {
     loc: true
   });
 
-  var globalsExposed = Object.keys(findGlobalsExposed(ast));
+  const globalsExposed = Object.keys(findGlobalsExposed(ast));
 
-  var dependencies = findGlobals(ast)
-    .filter(dep => allExternalDeps.indexOf(dep.name) === -1)
-    .filter(dep => ignoreableExternalDeps.indexOf(dep.name) === -1);
+  const dependencies = findGlobals(ast)
+    .filter((dep) => allExternalDeps.indexOf(dep.name) === -1)
+    .filter((dep) => ignoreableExternalDeps.indexOf(dep.name) === -1);
 
-  var depNames = dependencies.map(({ name }) => name);
+  const depNames = dependencies.map(({ name }) => name);
 
   // set allGlobalsExposed && allGlobalDeps in first iteration
   allGlobalsExposed = allGlobalsExposed.concat(globalsExposed);
@@ -79,19 +78,19 @@ function fillAllGlobalsConstants(filePath) {
 // Loop through all the files in the temp directory
 function executeTransformerWithDeps(filePath) {
   // console.log("Reading: '%s'", filePath);
-  var source = fs.readFileSync(filePath, { encoding: 'utf8' });
+  const source = fs.readFileSync(filePath, { encoding: 'utf8' });
 
-  var ast = acorn.parse(source, {
+  const ast = acorn.parse(source, {
     loc: true
   });
 
-  var dependencies = findGlobals(ast)
-    .filter(dep => allExternalDeps.indexOf(dep.name) === -1)
-    .filter(dep => ignoreableExternalDeps.indexOf(dep.name) === -1);
+  let dependencies = findGlobals(ast)
+    .filter((dep) => allExternalDeps.indexOf(dep.name) === -1)
+    .filter((dep) => ignoreableExternalDeps.indexOf(dep.name) === -1);
 
-  dependencies = [...new Set(dependencies.filter(e => allGlobalsExposed.indexOf(e.name) === -1))];
+  dependencies = [...new Set(dependencies.filter((e) => allGlobalsExposed.indexOf(e.name) === -1))];
 
-  var results = this(filePath, dependencies);
+  const results = this(filePath, dependencies);
 
   if (results) {
     fs.writeFileSync(filePath, results.replace(/;;/g, ';'));
@@ -102,7 +101,7 @@ function findGlobalsAtPath(dirPath) {
   try {
     recursiveDirFilesIterator(dirPath, fillAllGlobalsConstants);
 
-    return new Promise(function(resolve, reject) {
+    return new Promise((resolve, reject) => {
       allGlobalDeps = [...new Set(allGlobalDeps)];
       allGlobalsExposed = [...new Set(allGlobalsExposed)];
 
@@ -113,13 +112,13 @@ function findGlobalsAtPath(dirPath) {
     });
   } catch (err) {
     // An error occurred
-    console.error("Some Error Occured: ", err);
+    console.error('Some Error Occured: ', err);
     process.exit(1);
   }
 }
 
 function executeTransformer(filePath) {
-  var results = this(filePath);
+  const results = this(filePath);
 
   if (results) {
     fs.writeFileSync(filePath, results.replace(/;;/g, ';'));
@@ -135,7 +134,13 @@ function executeTransformer(filePath) {
  * @param      {<Regex>}  [paramsIgnoreFoldersRegex=/$^/]    Regular expression to match folder names to ignore during transform
  * @param      {<Array>}  [paramsIgnoreableExternalDeps=[]]  Array of dependencies to ignore during transform
  */
-function fixJSsAtPath(dirPath, transformer, paramsIgnoreFilesRegex = /$^/, paramsIgnoreFoldersRegex = /$^/, paramsIgnoreableExternalDeps = []) {
+function fixJSsAtPath(
+  dirPath,
+  transformer,
+  paramsIgnoreFilesRegex = /$^/,
+  paramsIgnoreFoldersRegex = /$^/,
+  paramsIgnoreableExternalDeps = []
+) {
   try {
     if (dirPath.constructor !== String) {
       throw new Error('dirPath should be a String');
@@ -159,18 +164,18 @@ function fixJSsAtPath(dirPath, transformer, paramsIgnoreFilesRegex = /$^/, param
 
     ignoreFilesRegex = paramsIgnoreFilesRegex;
     ignoreFoldersRegex = paramsIgnoreFoldersRegex;
-    ignoreableExternalDeps = ignoreableExternalDeps.concat(paramsIgnoreableExternalDeps)
+    ignoreableExternalDeps = ignoreableExternalDeps.concat(paramsIgnoreableExternalDeps);
 
-    findGlobalsAtPath(dirPath).then(function(allGlobalsObj) {
+    findGlobalsAtPath(dirPath).then((allGlobalsObj) => {
       recursiveDirFilesIterator(dirPath, executeTransformerWithDeps.bind(transformer));
     });
-  } catch(err) {
+  } catch (err) {
     console.log(err);
   }
 }
 
 module.exports = {
- fixJSsAtPath: fixJSsAtPath,
- transformLeakingGlobalsVars: transformLeakingGlobalsVars,
- transformUnusedAssignedVars: transformUnusedAssignedVars 
+  fixJSsAtPath,
+  transformLeakingGlobalsVars,
+  transformUnusedAssignedVars
 };

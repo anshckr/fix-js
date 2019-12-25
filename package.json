@@ -6,7 +6,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "sample:debug": "nodemon --inspect-brk example/sample.js",
-    "sample": "node example/sample.js"
+    "sample": "node example/sample.js",
+    "lint:check": "eslint --format=table --max-warnings 0 \"**/*.js\"",
+    "lint:fix": "npm run lint:check -- --fix",
+    "prettier:check": "prettier --check \"**/*.js\"",
+    "prettier:fix": "npm run prettier:check -- --write"
   },
   "keywords": [
     "acorn",
@@ -26,10 +30,17 @@
     "acorn": "7.1.0",
     "acorn-globals": "4.3.4",
     "acorn-walk": "7.0.0",
+    "eslint-config-prettier": "^6.7.0",
+    "eslint-plugin-prettier": "^3.1.2",
     "jscodeshift": "0.7.0",
-    "lodash": "4.17.15"
+    "lodash": "4.17.15",
+    "prettier": "^1.19.1"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-plugin-import": "^2.19.1"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/anshckr/fix-js.git"

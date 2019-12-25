@@ -1,10 +1,10 @@
-var fs = require('fs');
-var jscodeshift = require('jscodeshift');
-var _ = require('lodash');
-var acorn = require('acorn');
-var findGlobals = require('acorn-globals');
+const fs = require('fs');
+const jscodeshift = require('jscodeshift');
+const _ = require('lodash');
+const acorn = require('acorn');
+const findGlobals = require('acorn-globals');
 
-var j = jscodeshift;
+const j = jscodeshift;
 
 /**
  * { Transformer to fix all the unused assigned variables from a JS file }
@@ -23,53 +23,60 @@ module.exports = (filePath, dependencies = [], updateInplace = false) => {
     throw new Error('dependencies should be an Array');
   }
 
-  var source = fs.readFileSync(filePath, { encoding: 'utf8' });
+  const source = fs.readFileSync(filePath, { encoding: 'utf8' });
 
   if (!dependencies.length) {
     // get the global dependencies and fix them if no dependencies are passed
 
-    var ast = acorn.parse(source, {
+    const ast = acorn.parse(source, {
       loc: true
     });
 
     dependencies = findGlobals(ast);
   }
 
-  var root = j(source);
+  const root = j(source);
 
   console.log('\nFixing FilePath - %s\n', filePath);
 
   dependencies.forEach(({ name, nodes }) => {
     console.log('Fixing Dependency - %s\n', name);
 
-    var nodesStart = _.map(nodes, 'start');
+    const nodesStart = _.map(nodes, 'start');
 
-    var nodePathsCollection = root.find(j.Identifier, path => name === path.name && nodesStart.includes(path.start));
+    const nodePathsCollection = root.find(
+      j.Identifier,
+      (path) => name === path.name && nodesStart.includes(path.start)
+    );
 
     if (!nodePathsCollection.length) {
       console.log('\nFixing FilePath - %s\nNo matching nodes found for dependency - %s\n', filePath, name);
-      return
+      return;
     }
 
     // fix only dependencies with AssignmentExpression, ex: a = 1;
-    var identifiersWithinAssignExpCollection = nodePathsCollection
-      .filter(path => path.parentPath.value.type === "AssignmentExpression");
+    const identifiersWithinAssignExpCollection = nodePathsCollection.filter(
+      (path) => path.parentPath.value.type === 'AssignmentExpression'
+    );
 
     if (identifiersWithinAssignExpCollection.length === nodePathsCollection.length) {
-      var standaloneExpressionStatement = identifiersWithinAssignExpCollection.closest(j.ExpressionStatement);
+      const standaloneExpressionStatement = identifiersWithinAssignExpCollection.closest(j.ExpressionStatement);
 
       // only one references to the variable and that too not at Program level then directly remove its expression
-      if (standaloneExpressionStatement.length && standaloneExpressionStatement.closestScope().paths()[0].value.type !== 'Program') {
+      if (
+        standaloneExpressionStatement.length &&
+        standaloneExpressionStatement.closestScope().paths()[0].value.type !== 'Program'
+      ) {
         standaloneExpressionStatement.paths()[0].replace();
       }
     }
   });
 
-  var results = root.toSource();
+  const results = root.toSource();
 
   if (updateInplace) {
     fs.writeFileSync(filePath, results.replace(/;;/g, ';'));
   }
 
   return results;
-}
+};

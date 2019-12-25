@@ -1,10 +1,10 @@
 function findExposedGlobals(ast) {
-  var out = {};
+  const out = {};
 
   function makeRecord(name) {
     if (!(name in out)) {
       out[name] = {
-        name: name,
+        name,
         type: null,
         ast: null,
         isFunction: null,
@@ -15,8 +15,8 @@ function findExposedGlobals(ast) {
   }
 
   function scanVariableDeclaration(stmt) {
-    stmt.declarations.forEach(function(decl) {
-      var record = makeRecord(decl.id.name);
+    stmt.declarations.forEach((decl) => {
+      const record = makeRecord(decl.id.name);
       record.type = 'var';
       record.ast = decl;
       record.isFunction = !!(decl.init && decl.init.type === 'FunctionExpression');
@@ -25,19 +25,18 @@ function findExposedGlobals(ast) {
   }
 
   function scanBody(body, scopeType) {
-
     if (body.type === 'BlockStatement') {
       body = body.body;
     }
 
-    for (var i = 0; i < body.length; ++i) {
-      var stmt = body[i];
+    for (let i = 0; i < body.length; ++i) {
+      const stmt = body[i];
       switch (stmt.type) {
         // var foo = ...
         case 'VariableDeclaration':
           scanVariableDeclaration(stmt);
           break;
-          // function foo() { ... }
+        // function foo() { ... }
         case 'FunctionDeclaration':
           var record = makeRecord(stmt.id.name);
           record.type = 'function';
