@@ -47,3 +47,10 @@ To install the project you need to have `node` and `npm`
 ## Submitting a Pull Request
 
 Please go through existing issues and pull requests to check if somebody else is already working on it.
+
+Also, make sure to check linting issues in the code before you commit your
+changes.
+
+```sh
+npm run lint:check
+```
