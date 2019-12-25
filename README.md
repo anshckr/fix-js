@@ -58,7 +58,7 @@ var {
 **Returns**
 
 | Type | Description |
-| :--- | :--- | :--- |
+| :--- | :--- |
 | `String` | Transformed file content |
 
 ### 3. `transformUnusedAssignedVars` (Transformer to fix all the unused assigned variables from a JS file)
@@ -72,7 +72,7 @@ var {
 **Returns**
 
 | Type | Description |
-| :--- | :--- | :--- |
+| :--- | :--- |
 | `String` | Transformed file content |
 
 ## Usage
