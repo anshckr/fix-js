@@ -1,0 +1,12 @@
+{
+  "nyc": {
+    "all": true,
+    "exclude": [
+      "test/**"
+    ],
+    "include": [
+      "**/*.js"
+    ],
+    "instrument": true
+  }
+}

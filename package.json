@@ -4,8 +4,9 @@
   "description": "Fix JS code",
   "main": "index.js",
   "scripts": {
-    "mocha:test": "mocha '!(node_modules)**/*.spec.js'",
-    "mocha:test:debug": "mocha --inspect-brk '!(node_modules)**/*.spec.js'",
+    "mocha:test": "mocha '!(node_modules)test/**/*.spec.js' --exit",
+    "mocha:test:debug": "mocha --inspect-brk '!(node_modules)test/**/*.spec.js' --exit",
+    "coverage": "nyc --reporter=html --reporter=text npm run mocha:test --exit",
     "sample:debug": "nodemon --inspect-brk example/sample.js",
     "sample": "node example/sample.js",
     "lint:check": "eslint --format=table --max-warnings 0 \"**/*.js\"",
@@ -43,6 +44,7 @@
     "eslint-config-prettier": "6.8.0",
     "eslint-plugin-import": "2.19.1",
     "eslint-plugin-prettier": "3.1.2",
+    "nyc": "15.0.0",
     "prettier": "1.19.1",
     "sinon": "8.0.1",
     "sinon-chai": "3.4.0"
