@@ -30,7 +30,8 @@ In Node.js:
 var {
   fixJSsAtPath,
   transformLeakingGlobalsVars,
-  transformUnusedAssignedVars
+  transformUnusedAssignedVars,
+  transformNoCamelCaseVars
 } = require('@anshckr/fix-js');
 
 ```
@@ -62,6 +63,19 @@ var {
 | `String` | Transformed file content |
 
 ### 3. `transformUnusedAssignedVars` (Transformer to fix all the unused assigned variables from a JS file)
+
+| Parameter | Type | Description |
+| :--- | :--- | :--- |
+| `filePath `  | `String`  | **Required**. The file path you want to fix  |
+| `updateInplace ` | `Boolean` | **Optional**. Whether to update the file or not. **Default:** false |
+
+**Returns**
+
+| Type | Description |
+| :--- | :--- |
+| `String` | Transformed file content |
+
+### 4. `transformNoCamelCaseVars` (Transformer to fix all the non camel cased variables from a JS file)
 
 | Parameter | Type | Description |
 | :--- | :--- | :--- |

@@ -22,7 +22,7 @@ const ignoreableExternalDeps = Object.keys(dependenciesObj).reduce(
  * { Example usage of fixJSsAtPath }
  */
 // with minimal required params
-fixJSsAtPath(directoryPath, transformNoCamelCaseVars, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
+// fixJSsAtPath(directoryPath, transformNoCamelCaseVars, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
 // with all params
 // fixJSsAtPath(directoryPath, transformLeakingGlobalsVars, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
 
@@ -43,10 +43,9 @@ fixJSsAtPath(directoryPath, transformNoCamelCaseVars, ignoreFilesRegex, ignoreFo
 //  */
 
 // with specific dependencies to fix
-// transformUnusedAssignedVars('/Users/Anshul/railsApp/app/assets/javascripts/admin.js', dependencies);
 // // will update the file instead of returning the modified contents
-// transformUnusedAssignedVars('/Users/Anshul/railsApp/app/assets/javascripts/admin.js', dependencies, true);
-// // without dependencies, will detect all the globals in the file and fix them
+// transformUnusedAssignedVars('/Users/Anshul/railsApp/app/assets/javascripts/admin.js', true);
+// // will return the the modified contents file instead of directly fixing
 // transformUnusedAssignedVars('/Users/Anshul/railsApp/app/assets/javascripts/admin.js');
 
 // /**
