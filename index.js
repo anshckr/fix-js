@@ -15,6 +15,8 @@ const constants = require('./static/constants.json');
 // transformers
 const transformLeakingGlobalsVars = require('./transforms/leaking-global-vars');
 const transformUnusedAssignedVars = require('./transforms/unused-assigned-vars');
+const transformNoCamelCaseVars = require('./transforms/no-camelcase-vars');
+const transformDestructAssign = require('./transforms/react-destruct-assign');
 
 /* will be ignored in dependencies -- start */
 
@@ -183,5 +185,7 @@ function fixJSsAtPath(
 module.exports = {
   fixJSsAtPath,
   transformLeakingGlobalsVars,
-  transformUnusedAssignedVars
+  transformUnusedAssignedVars,
+  transformNoCamelCaseVars,
+  transformDestructAssign
 };
