@@ -1,6 +1,7 @@
 const fs = require('fs');
 const { resolve, extname } = require('path');
 const acorn = require('acorn');
+const jsx = require('acorn-jsx');
 const findGlobals = require('acorn-globals');
 
 // In newer Node.js versions where process is already global this isn't necessary.
@@ -17,6 +18,7 @@ const transformLeakingGlobalsVars = require('./transforms/leaking-global-vars');
 const transformUnusedAssignedVars = require('./transforms/unused-assigned-vars');
 const transformNoCamelCaseVars = require('./transforms/no-camelcase-vars');
 const transformDestructAssign = require('./transforms/react-destruct-assign');
+const transformActionAs = require('./transforms/react-action-as');
 
 /* will be ignored in dependencies -- start */
 
@@ -40,7 +42,7 @@ function recursiveDirFilesIterator(dirPath, cb) {
     const filePath = resolve(dirPath, file.name);
 
     if (file.isFile()) {
-      if (ignoreFilesRegex.test(file.name) || extname(file.name) !== '.js') {
+      if (ignoreFilesRegex.test(file.name) || !['.js', '.jsx'].includes(extname(file.name))) {
         console.log("Skipping file: '%s'", filePath);
       } else {
         cb(filePath);
@@ -60,8 +62,9 @@ function fillAllGlobalsConstants(filePath) {
   // console.log("Reading: '%s'", filePath);
   const source = fs.readFileSync(resolve(__dirname, filePath), { encoding: 'utf8' });
 
-  const ast = acorn.parse(source, {
-    loc: true
+  const ast = acorn.Parser.extend(jsx()).parse(source, {
+    loc: true,
+    sourceType: 'module'
   });
 
   const globalsExposed = Object.keys(findGlobalsExposed(ast));
@@ -82,8 +85,9 @@ function executeTransformerWithDeps(filePath) {
   // console.log("Reading: '%s'", filePath);
   const source = fs.readFileSync(resolve(__dirname, filePath), { encoding: 'utf8' });
 
-  const ast = acorn.parse(source, {
-    loc: true
+  const ast = acorn.Parser.extend(jsx()).parse(source, {
+    loc: true,
+    sourceType: 'module'
   });
 
   let dependencies = findGlobals(ast)
@@ -93,6 +97,14 @@ function executeTransformerWithDeps(filePath) {
   dependencies = [...new Set(dependencies.filter((e) => allGlobalsExposed.indexOf(e.name) === -1))];
 
   const results = this(filePath, dependencies);
+
+  if (results) {
+    fs.writeFileSync(resolve(__dirname, filePath), results.replace(/;;/g, ';'));
+  }
+}
+
+function executeTransformer(filePath) {
+  const results = this(filePath);
 
   if (results) {
     fs.writeFileSync(resolve(__dirname, filePath), results.replace(/;;/g, ';'));
@@ -182,10 +194,61 @@ function fixJSsAtPath(
   }
 }
 
+/**
+ * { fixReactAtPath: Transforms all the React JS/JSX files at the dirPath }
+ *
+ * @param      {<String>}  dirPath                           The directory where you want to run the transform at
+ * @param      {<Function>}  transformer                     The transformer which will modify the JS files
+ * @param      {<Regex>}  [paramsIgnoreFilesRegex=/$^/]      Regular expression to match filenames
+ * to ignore during transform
+ * @param      {<Regex>}  [paramsIgnoreFoldersRegex=/$^/]    Regular expression to match folder names
+ * to ignore during transform
+ * @param      {<Array>}  [paramsIgnoreableExternalDeps=[]]  Array of dependencies to ignore during transform
+ */
+function fixReactAtPath(
+  dirPath,
+  transformer,
+  paramsIgnoreFilesRegex = /$^/,
+  paramsIgnoreFoldersRegex = /$^/,
+  paramsIgnoreableExternalDeps = []
+) {
+  try {
+    if (dirPath.constructor !== String) {
+      throw new Error('dirPath should be a String');
+    }
+
+    if (transformer.constructor !== Function) {
+      throw new Error('transformer should be a Function');
+    }
+
+    if (paramsIgnoreFilesRegex.constructor !== RegExp) {
+      throw new Error('paramsIgnoreFilesRegex should be a RegExp');
+    }
+
+    if (paramsIgnoreFoldersRegex.constructor !== RegExp) {
+      throw new Error('paramsIgnoreFoldersRegex should be a RegExp');
+    }
+
+    if (paramsIgnoreableExternalDeps.constructor !== Array) {
+      throw new Error('paramsIgnoreableExternalDeps should be an Array');
+    }
+
+    ignoreFilesRegex = paramsIgnoreFilesRegex;
+    ignoreFoldersRegex = paramsIgnoreFoldersRegex;
+    ignoreableExternalDeps = ignoreableExternalDeps.concat(paramsIgnoreableExternalDeps);
+
+    recursiveDirFilesIterator(dirPath, executeTransformer.bind(transformer));
+  } catch (err) {
+    console.log(err);
+  }
+}
+
 module.exports = {
   fixJSsAtPath,
+  fixReactAtPath,
   transformLeakingGlobalsVars,
   transformUnusedAssignedVars,
   transformNoCamelCaseVars,
-  transformDestructAssign
+  transformDestructAssign,
+  transformActionAs
 };

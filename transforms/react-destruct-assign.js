@@ -2,19 +2,11 @@ const fs = require('fs');
 const { resolve } = require('path');
 const jscodeshift = require('jscodeshift');
 const _ = require('lodash');
-const acorn = require('acorn');
-const jsx = require('acorn-jsx');
-// const findGlobals = require('acorn-globals');
 
 const j = jscodeshift;
 
-// global objects
-const constants = require('../static/constants.json');
-
-const allExternalDeps = Object.keys(constants).reduce((accumulator, key) => accumulator.concat(constants[key]), []);
-
 /**
- * { Transformer to fix all the unused assigned variables from a JS file }
+ * { Transformer to fix react/destructuring-assignment rule }
  *
  * @param      {String}   filePath                Path of the file to fix
  * @param      {Boolean}  [updateInplace=false]   Whether to update the file or not
@@ -25,88 +17,105 @@ module.exports = (filePath, updateInplace = false) => {
     throw new Error('filePath should be a String');
   }
 
-  // if (/accounts\/common\.js/.test(filePath)) {
-  //   debugger;
-  // }
-
   console.log('\nFixing FileName - %s\n', filePath);
 
   const source = fs.readFileSync(resolve(__dirname, filePath), { encoding: 'utf8' });
 
-  const ast = acorn.Parser.extend(jsx()).parse(source, {
-    loc: true,
-    sourceType: 'module'
-  });
-
   const root = j(source);
 
-  debugger;
+  ['props', 'state'].forEach((type) => {
+    const nodePathsCollection = root
+      .find(j.MemberExpression, (node) => {
+        return node.object.type === 'ThisExpression' && node.property.name === type;
+      })
+      .filter((nodePath) => {
+        return nodePath.parentPath.value.type === 'MemberExpression';
+      });
 
-  const nodePathsCollection = root.find(j.MemberExpression, (node) => {
-    return (
-      node.object.type === 'ThisExpression' &&
-      node.property.name === 'props'
-    );
-  });
+    // group nodes with common scope together
+    const groupedByScopeNodePathsObj = _.chain(nodePathsCollection.paths())
+      .groupBy(
+        (path) =>
+          j(path)
+            .closestScope()
+            .get(0).scope.path.value.start
+      )
+      .value();
 
-  // group nodes with common scope together
-  const groupedByScopeNodePathsObj = _.chain(nodePathsCollection.paths())
-    .groupBy(
-      (path) =>
-        j(path)
-          .closestScope()
-          .get(0).scope.path.value.start
-    )
-    .value();
+    const scopesStart = Object.keys(groupedByScopeNodePathsObj);
 
-  const scopesStart = Object.keys(groupedByScopeNodePathsObj);
+    scopesStart.forEach((start) => {
+      const nodePaths = groupedByScopeNodePathsObj[start];
 
-  scopesStart.forEach((start) => {
-    const nodePaths = groupedByScopeNodePathsObj[start];
+      const groupedCollection = j(nodePaths);
 
-    const groupedCollection = j(nodePaths);
+      let closestScopeCollec = groupedCollection.closestScope(j.Node, { start: parseInt(start, 10) });
 
-    const closestScopeCollec = groupedCollection.closestScope(j.Node, { start: parseInt(start, 10) });
+      let dependencies = [];
 
-    const dependencies = [];
+      groupedCollection.forEach((nodePath) => {
+        dependencies.push(nodePath.parentPath.value.property.name);
 
-    groupedCollection.forEach((node) => {
-      dependencies.push(node.parentPath.value.property.name);
-    });
+        j(nodePath)
+          .closest(j.MemberExpression)
+          .paths()[0]
+          .replace(nodePath.parentPath.value.property);
+      });
 
-    // const constDeclarationCollec = blockStatementNode.body.find((node) => {
-    //   return node.type === 'VariableDeclaration' && node.type === 'const';
-    // });
+      let blockStatementCollec = closestScopeCollec.find(j.BlockStatement);
 
-    // let constDeclaration;
+      if (!blockStatementCollec.length) {
+        closestScopeCollec = closestScopeCollec.closest(j.FunctionExpression);
 
-    // constDeclarationCollec.forEach((nodePath) => {});
+        blockStatementCollec = closestScopeCollec.find(j.BlockStatement);
+      }
 
-    const objectPropertiesArr = dependencies.map((dep) => {
-      return j.Property('init', j.identifier(dep), j.identifier(dep));
-    });
-
-    if (false) {
-      // there is already const declaration inside BlockStatement
-      // j(constDeclaration)
-      //   .get('declarations')
-      //   .push(j.variableDeclarator(j.identifier(depName), null));
-    } else {
-      // declare at each scope level
-      const blockStatementNode = closestScopeCollec
-        .find(j.BlockStatement)
+      const blockStatementNode = blockStatementCollec
         .paths()
         .find((path) => path.parent === closestScopeCollec.paths()[0]).node;
 
-      blockStatementNode.body.unshift(
-        j.variableDeclaration('const', [
-          j.variableDeclarator(
-            j.objectPattern(objectPropertiesArr),
-            j.memberExpression(j.thisExpression, j.identifier('props'))
-          )
-        ])
-      );
-    }
+      const thisPropsCollec = closestScopeCollec.find(j.VariableDeclarator, (node) => {
+        return (
+          node.init &&
+          node.init.type === 'MemberExpression' &&
+          node.init.object.type === 'ThisExpression' &&
+          node.init.property.type === 'Identifier' &&
+          node.init.property.name === type
+        );
+      });
+
+      if (thisPropsCollec.length) {
+        // there is already const declaration inside BlockStatement
+        const objectExpressionProperties = thisPropsCollec.get('id').value.properties;
+
+        const alreadyDeclaredProps = objectExpressionProperties.map((property) => {
+          return property.value.name;
+        });
+
+        dependencies = _.uniq(dependencies).filter((dep) => {
+          return !alreadyDeclaredProps.includes(dep);
+        });
+
+        const newProperties = dependencies.map((dep) => {
+          return j.property('init', j.identifier(dep), j.identifier(dep));
+        });
+
+        thisPropsCollec.get('id').value.properties = objectExpressionProperties.concat(newProperties);
+      } else {
+        const newProperties = _.uniq(dependencies).map((dep) => {
+          return j.property('init', j.identifier(dep), j.identifier(dep));
+        });
+        // declare at each scope level
+        blockStatementNode.body.unshift(
+          j.variableDeclaration('const', [
+            j.variableDeclarator(
+              j.objectPattern(newProperties),
+              j.memberExpression(j.thisExpression(), j.identifier(type))
+            )
+          ])
+        );
+      }
+    });
   });
 
   const results = root.toSource();

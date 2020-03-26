@@ -4,7 +4,6 @@ const jscodeshift = require('jscodeshift');
 const _ = require('lodash');
 const acorn = require('acorn');
 const findGlobalsExposed = require('../utils/find-globals-exposed');
-// const findGlobals = require('acorn-globals');
 
 const j = jscodeshift;
 
@@ -71,7 +70,7 @@ const fixFunctionParams = (nodePathCollection) => {
 };
 
 /**
- * { Transformer to fix all the unused assigned variables from a JS file }
+ * { Transformer to fix all the non camel cased variables from a JS file }
  *
  * @param      {String}   filePath                Path of the file to fix
  * @param      {Boolean}  [updateInplace=false]   Whether to update the file or not
