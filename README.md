@@ -17,7 +17,6 @@ In Node.js:
 
 var {
   fixJSsAtPath,
-  fixReactAtPath,
   transformLeakingGlobalsVars,
   transformUnusedAssignedVars,
   transformNoCamelCaseVars,
@@ -39,17 +38,7 @@ var {
 | `paramsIgnoreFoldersRegex` | `Regex` | **Optional**. Regular expression to match folder names to ignore during transform. **Default:** /$^/ |
 | `paramsIgnoreableExternalDeps` | `Array` | **Optional**. Array of dependencies to ignore during transform. **Default:** [] |
 
-### 2. `fixReactAtPath` (Transforms all the React JS/JSX files at the dirPath)
-
-| Parameter | Type | Description |
-| :--- | :--- | :--- |
-| `dirPath`  | `String`  | **Required**. The directory path where you want to run the transform at  |
-| `transformer` | `Function` | **Required**. The transformer which will modify the JS files |
-| `paramsIgnoreFilesRegex` | `Regex` | **Optional**. Regular expression to match file names to ignore during transform. **Default:** /$^/ |
-| `paramsIgnoreFoldersRegex` | `Regex` | **Optional**. Regular expression to match folder names to ignore during transform. **Default:** /$^/ |
-| `paramsIgnoreableExternalDeps` | `Array` | **Optional**. Array of dependencies to ignore during transform. **Default:** [] |
-
-### 3. `transformLeakingGlobalsVars` (Transformer to fix all the leaking globals from a JS file)
+### 2. `transformLeakingGlobalsVars` (Transformer to fix all the leaking globals from a JS file)
 
 | Parameter | Type | Description |
 | :--- | :--- | :--- |
@@ -73,7 +62,7 @@ In the above code if we don't declare `i` in the upper scope like `var i` then `
 
 The utility will declare these types leaking variables
 
-### 4. `transformUnusedAssignedVars` (Transformer to fix all the unused assigned variables from a JS file)
+### 3. `transformUnusedAssignedVars` (Transformer to fix all the unused assigned variables from a JS file)
 
 | Parameter | Type | Description |
 | :--- | :--- | :--- |
@@ -86,12 +75,13 @@ The utility will declare these types leaking variables
 | :--- | :--- |
 | `String` | Transformed file content |
 
-### 5. `transformNoCamelCaseVars` (Transformer to fix all the non camel cased variables from a JS file)
+### 4. `transformNoCamelCaseVars` (Transformer to fix all the non camel cased variables from a JS file)
 
 | Parameter | Type | Description |
 | :--- | :--- | :--- |
 | `filePath `  | `String`  | **Required**. The file path you want to fix  |
 | `updateInplace ` | `Boolean` | **Optional**. Whether to update the file or not. **Default:** false |
+| `collectedGlobals ` | `Object` | **Optional**. Contains two keys globalsExposed, dependencies for the file. **Default:** {} |
 
 **Returns**
 
@@ -116,7 +106,7 @@ someFunc();
 ```
 
 
-### 6. `transformDestructAssign` (Transformer to fix react/destructuring-assignment rule)
+### 5. `transformDestructAssign` (Transformer to fix react/destructuring-assignment rule)
 
 | Parameter | Type | Description |
 | :--- | :--- | :--- |
@@ -149,7 +139,7 @@ render() {
 }
 ```
 
-### 7. `transformActionAs` (Transforms all named export actions use 'as' while importing. Also converts the 'bindActionCreators' objectExpressionNode to use the as imported action)
+### 6. `transformActionAs` (Transforms all named export actions use 'as' while importing. Also converts the 'bindActionCreators' objectExpressionNode to use the as imported action)
 
 | Parameter | Type | Description |
 | :--- | :--- | :--- |

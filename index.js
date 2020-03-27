@@ -1,7 +1,6 @@
 const fs = require('fs');
 const { resolve, extname } = require('path');
 const acorn = require('acorn');
-const jsx = require('acorn-jsx');
 const findGlobals = require('acorn-globals');
 
 // In newer Node.js versions where process is already global this isn't necessary.
@@ -35,6 +34,8 @@ let allGlobalDeps = [];
 
 let allGlobalsExposed = [];
 
+let fixOnlyDependencies = false;
+
 function recursiveDirFilesIterator(dirPath, cb) {
   const files = fs.readdirSync(resolve(__dirname, dirPath), { withFileTypes: true });
 
@@ -57,14 +58,11 @@ function recursiveDirFilesIterator(dirPath, cb) {
   });
 }
 
-// Loop through all the files in the temp directory
 function fillAllGlobalsConstants(filePath) {
-  // console.log("Reading: '%s'", filePath);
   const source = fs.readFileSync(resolve(__dirname, filePath), { encoding: 'utf8' });
 
-  const ast = acorn.Parser.extend(jsx()).parse(source, {
-    loc: true,
-    sourceType: 'module'
+  const ast = acorn.parse(source, {
+    loc: true
   });
 
   const globalsExposed = Object.keys(findGlobalsExposed(ast));
@@ -80,38 +78,40 @@ function fillAllGlobalsConstants(filePath) {
   allGlobalDeps = allGlobalDeps.concat(depNames);
 }
 
-// Loop through all the files in the temp directory
-function executeTransformerWithDeps(filePath) {
-  // console.log("Reading: '%s'", filePath);
+function executeTransformer(filePath) {
+  let results;
+
   const source = fs.readFileSync(resolve(__dirname, filePath), { encoding: 'utf8' });
 
-  const ast = acorn.Parser.extend(jsx()).parse(source, {
-    loc: true,
-    sourceType: 'module'
+  const ast = acorn.parse(source, {
+    loc: true
   });
+
+  const globalsExposed = Object.keys(findGlobalsExposed(ast));
 
   let dependencies = findGlobals(ast)
     .filter((dep) => allExternalDeps.indexOf(dep.name) === -1)
     .filter((dep) => ignoreableExternalDeps.indexOf(dep.name) === -1);
 
-  dependencies = [...new Set(dependencies.filter((e) => allGlobalsExposed.indexOf(e.name) === -1))];
+  if (fixOnlyDependencies) {
+    dependencies = [...new Set(dependencies.filter((e) => allGlobalsExposed.indexOf(e.name) === -1))];
 
-  const results = this(filePath, dependencies);
+    results = this(filePath, dependencies);
+  } else {
+    dependencies = [...new Set(dependencies)];
+
+    results = this(filePath, false, {
+      globalsExposed,
+      dependencies
+    });
+  }
 
   if (results) {
     fs.writeFileSync(resolve(__dirname, filePath), results.replace(/;;/g, ';'));
   }
 }
 
-function executeTransformer(filePath) {
-  const results = this(filePath);
-
-  if (results) {
-    fs.writeFileSync(resolve(__dirname, filePath), results.replace(/;;/g, ';'));
-  }
-}
-
-function findGlobalsAtPath(dirPath) {
+function collectAllGlobals(dirPath) {
   return new Promise((res, rej) => {
     try {
       recursiveDirFilesIterator(dirPath, fillAllGlobalsConstants);
@@ -128,14 +128,6 @@ function findGlobalsAtPath(dirPath) {
     }
   });
 }
-
-// function executeTransformer(filePath) {
-//   const results = this(filePath);
-
-//   if (results) {
-//     fs.writeFileSync(filePath, results.replace(/;;/g, ';'));
-//   }
-// }
 
 /**
  * { fixJSsAtPath: Transforms all the JS files at the dirPath }
@@ -180,64 +172,23 @@ function fixJSsAtPath(
     ignoreFoldersRegex = paramsIgnoreFoldersRegex;
     ignoreableExternalDeps = ignoreableExternalDeps.concat(paramsIgnoreableExternalDeps);
 
-    findGlobalsAtPath(dirPath)
-      .then(() => {
-        recursiveDirFilesIterator(dirPath, executeTransformerWithDeps.bind(transformer));
-      })
-      .catch((err) => {
-        // An error occurred
-        console.error('Some Error Occured: ', err);
-        process.exit(1);
-      });
-  } catch (err) {
-    console.log(err);
-  }
-}
+    console.log("Executing Transformer: '%s'", transformer.name);
 
-/**
- * { fixReactAtPath: Transforms all the React JS/JSX files at the dirPath }
- *
- * @param      {<String>}  dirPath                           The directory where you want to run the transform at
- * @param      {<Function>}  transformer                     The transformer which will modify the JS files
- * @param      {<Regex>}  [paramsIgnoreFilesRegex=/$^/]      Regular expression to match filenames
- * to ignore during transform
- * @param      {<Regex>}  [paramsIgnoreFoldersRegex=/$^/]    Regular expression to match folder names
- * to ignore during transform
- * @param      {<Array>}  [paramsIgnoreableExternalDeps=[]]  Array of dependencies to ignore during transform
- */
-function fixReactAtPath(
-  dirPath,
-  transformer,
-  paramsIgnoreFilesRegex = /$^/,
-  paramsIgnoreFoldersRegex = /$^/,
-  paramsIgnoreableExternalDeps = []
-) {
-  try {
-    if (dirPath.constructor !== String) {
-      throw new Error('dirPath should be a String');
+    fixOnlyDependencies = ['transformLeakingGlobalsVars', 'transformUnusedAssignedVars'].includes(transformer.name);
+
+    if (fixOnlyDependencies) {
+      collectAllGlobals(dirPath)
+        .then(() => {
+          recursiveDirFilesIterator(dirPath, executeTransformer.bind(transformer));
+        })
+        .catch((err) => {
+          // An error occurred
+          console.error('Some Error Occured: ', err);
+          process.exit(1);
+        });
+    } else {
+      recursiveDirFilesIterator(dirPath, executeTransformer.bind(transformer));
     }
-
-    if (transformer.constructor !== Function) {
-      throw new Error('transformer should be a Function');
-    }
-
-    if (paramsIgnoreFilesRegex.constructor !== RegExp) {
-      throw new Error('paramsIgnoreFilesRegex should be a RegExp');
-    }
-
-    if (paramsIgnoreFoldersRegex.constructor !== RegExp) {
-      throw new Error('paramsIgnoreFoldersRegex should be a RegExp');
-    }
-
-    if (paramsIgnoreableExternalDeps.constructor !== Array) {
-      throw new Error('paramsIgnoreableExternalDeps should be an Array');
-    }
-
-    ignoreFilesRegex = paramsIgnoreFilesRegex;
-    ignoreFoldersRegex = paramsIgnoreFoldersRegex;
-    ignoreableExternalDeps = ignoreableExternalDeps.concat(paramsIgnoreableExternalDeps);
-
-    recursiveDirFilesIterator(dirPath, executeTransformer.bind(transformer));
   } catch (err) {
     console.log(err);
   }
@@ -245,7 +196,6 @@ function fixReactAtPath(
 
 module.exports = {
   fixJSsAtPath,
-  fixReactAtPath,
   transformLeakingGlobalsVars,
   transformUnusedAssignedVars,
   transformNoCamelCaseVars,

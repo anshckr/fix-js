@@ -2,7 +2,6 @@
 
 const {
   fixJSsAtPath,
-  fixReactAtPath,
   transformLeakingGlobalsVars,
   transformUnusedAssignedVars,
   transformNoCamelCaseVars,
@@ -11,8 +10,8 @@ const {
 } = require('../index');
 const dependenciesObj = require('./dependencies.json');
 
-// const directoryPath = '/Users/Anshul/railsApp/app/assets/javascripts/';
-const directoryPath = '/Users/Anshul/railsApp/react/app/';
+const directoryPath = '/Users/Anshul/railsApp/app/assets/javascripts/';
+// const directoryPath = '/Users/Anshul/railsApp/react/app/';
 const ignoreFilesRegex = /^socket|polyfill|prettify|run_prettify|\.min\.js/;
 const ignoreFoldersRegex = /\/libraries|google-code-prettify/;
 
@@ -28,14 +27,10 @@ const ignoreableExternalDeps = Object.keys(dependenciesObj).reduce(
 // fixJSsAtPath(directoryPath, transformDestructAssign);
 // with all params
 // fixJSsAtPath(directoryPath, transformLeakingGlobalsVars, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
-
-/**
- * { Example usage of fixReactAtPath }
- */
-// with minimal required params
-// fixReactAtPath(directoryPath, transformDestructAssign);
-// with all params
-// fixReactAtPath(directoryPath, transformDestructAssign, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
+// fixJSsAtPath(directoryPath, transformUnusedAssignedVars, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
+// fixJSsAtPath(directoryPath, transformNoCamelCaseVars, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
+// fixJSsAtPath(directoryPath, transformDestructAssign, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
+// fixJSsAtPath(directoryPath, transformActionAs, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
 
 // /**
 //  * { Example usage of transformLeakingGlobalsVars }

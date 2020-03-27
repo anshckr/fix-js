@@ -183,7 +183,7 @@ const handleScopeByType = (closestScopeCollec, depName, filePath) => {
  * @param      {Boolean}    [updateInplace=false]     Whether to update the file or not
  * @return     {String}     { Transformed string to write to the file }
  */
-module.exports = (filePath, dependencies = [], updateInplace = false) => {
+const transformLeakingGlobalsVars = (filePath, dependencies = [], updateInplace = false) => {
   if (filePath.constructor !== String) {
     throw new Error('filePath should be a String');
   }
@@ -328,3 +328,5 @@ module.exports = (filePath, dependencies = [], updateInplace = false) => {
 
   return results;
 };
+
+module.exports = transformLeakingGlobalsVars;

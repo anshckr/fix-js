@@ -2,8 +2,6 @@ const fs = require('fs');
 const { resolve } = require('path');
 const jscodeshift = require('jscodeshift');
 const _ = require('lodash');
-const acorn = require('acorn');
-const findGlobalsExposed = require('../utils/find-globals-exposed');
 
 const j = jscodeshift;
 
@@ -36,36 +34,55 @@ const getNonJqueryName = (jqueryObjName) => {
     .join('$');
 };
 
-const getFixableIdentifiers = (nodePathCollection, paramName) => {
-  return nodePathCollection.find(j.Identifier, { name: paramName }).filter((depPath) => {
+const isFixableVariable = (variableName) => {
+  let isEligibleVariable = false;
+
+  if (isNotCamelCased(variableName) || isSnakeCasedVar(variableName)) {
+    isEligibleVariable = true;
+  }
+
+  if (isJqueryObjVar(variableName)) {
+    const nonJqueryName = getNonJqueryName(variableName);
+
+    if (isNotCamelCased(nonJqueryName)) {
+      isEligibleVariable = true;
+    }
+  }
+
+  return isEligibleVariable;
+};
+
+const getAndFixIdentifiers = (nodePathCollection, variableName) => {
+  const depUsageCollec = nodePathCollection.find(j.Identifier, { name: variableName }).filter((depPath) => {
     if (depPath.name === 'property') {
       return depPath.parentPath.value.computed;
     }
 
     return !['key'].includes(depPath.name);
   });
+
+  depUsageCollec.forEach((depUsagePath) => {
+    const depName = depUsagePath.value.name;
+
+    if (isNotCamelCased(depName) || isSnakeCasedVar(depName)) {
+      depUsagePath.value.name = _.camelCase(depName);
+    }
+
+    if (isJqueryObjVar(depName)) {
+      const nonJqueryName = getNonJqueryName(depName);
+
+      depUsagePath.value.name = `$${_.camelCase(nonJqueryName)}`;
+    }
+  });
 };
 
-const fixFunctionParams = (nodePathCollection) => {
-  nodePathCollection.forEach((nodePath) => {
-    const nonCamelCasedParams = [];
-    const node = nodePath.value;
+const fixFunctionParams = (nodePath) => {
+  nodePath.value.params.forEach((paramNode) => {
+    const variableName = paramNode.name;
 
-    node.params.forEach((paramNode) => {
-      const variableName = paramNode.name;
-
-      if (isNotCamelCased(variableName) || isSnakeCasedVar(variableName)) {
-        nonCamelCasedParams.push(variableName);
-      }
-    });
-
-    nonCamelCasedParams.forEach((paramName) => {
-      const depUsageCollec = getFixableIdentifiers(j(nodePath), paramName);
-
-      depUsageCollec.forEach((depUsagePath) => {
-        depUsagePath.value.name = _.camelCase(depUsagePath.value.name);
-      });
-    });
+    if (isFixableVariable(variableName)) {
+      getAndFixIdentifiers(j(nodePath), variableName);
+    }
   });
 };
 
@@ -74,9 +91,10 @@ const fixFunctionParams = (nodePathCollection) => {
  *
  * @param      {String}   filePath                Path of the file to fix
  * @param      {Boolean}  [updateInplace=false]   Whether to update the file or not
+ * @param      {Object}   [collectedGlobals={}]   Contains two keys globalsExposed, dependencies for the file
  * @return     {String}   { Transformed string to write to the file }
  */
-module.exports = (filePath, updateInplace = false) => {
+const transformNoCamelCaseVars = (filePath, updateInplace = false, collectedGlobals = {}) => {
   if (filePath.constructor !== String) {
     throw new Error('filePath should be a String');
   }
@@ -85,93 +103,76 @@ module.exports = (filePath, updateInplace = false) => {
 
   const source = fs.readFileSync(resolve(__dirname, filePath), { encoding: 'utf8' });
 
-  const ast = acorn.parse(source, {
-    loc: true
-  });
-
-  const globalsExposed = Object.keys(findGlobalsExposed(ast));
-
   const root = j(source);
 
-  const varibableDeclaratorCollec = root.find(j.VariableDeclarator, (node) => {
-    let isEligibleNode = false;
-
-    const variableName = node.id.name;
-
-    if (isNotCamelCased(variableName) || isSnakeCasedVar(variableName)) {
-      isEligibleNode = true;
-    }
-
-    if (isJqueryObjVar(variableName)) {
-      const nonJqueryName = getNonJqueryName(variableName);
-
-      if (isNotCamelCased(nonJqueryName)) {
-        isEligibleNode = true;
-      }
-    }
-
-    return isEligibleNode;
-  });
-
   // Fix all variable declaration
-  varibableDeclaratorCollec.forEach((path) => {
-    const depName = path.value.id.name;
+  root
+    .find(j.VariableDeclarator, (node) => {
+      const variableName = node.id.name;
 
-    const closestScopeCollec = j(path).closestScope();
+      return isFixableVariable(variableName);
+    })
+    .forEach((path) => {
+      const variableName = path.value.id.name;
 
-    const depUsageCollec = getFixableIdentifiers(closestScopeCollec, depName);
+      const closestScopeCollec = j(path).closestScope();
 
-    depUsageCollec.forEach((depUsagePath) => {
-      const variableName = depUsagePath.value.name;
+      getAndFixIdentifiers(closestScopeCollec, variableName);
+    });
 
-      if (isNotCamelCased(variableName) || isSnakeCasedVar(variableName)) {
-        depUsagePath.value.name = _.camelCase(variableName);
-      }
-
-      if (isJqueryObjVar(variableName)) {
-        const nonJqueryName = getNonJqueryName(variableName);
-
-        depUsagePath.value.name = `$${_.camelCase(nonJqueryName)}`;
+  // fix dependencies
+  if (collectedGlobals.dependencies) {
+    collectedGlobals.dependencies.forEach(({ name: variableName }) => {
+      if (isFixableVariable(variableName)) {
+        getAndFixIdentifiers(root, variableName);
       }
     });
-  });
+  }
 
-  // Fix all functional declarations params
+  // Fix all functional declarations
   const functionDeclaratorCollec = root.find(j.FunctionDeclaration);
-  fixFunctionParams(functionDeclaratorCollec);
 
   functionDeclaratorCollec.forEach((nodePath) => {
-    // fix function names
-    const node = nodePath.value;
+    // Fix all functional params
+    fixFunctionParams(nodePath);
 
-    if (!globalsExposed.includes(node.id.name) && (isNotCamelCased(node.id.name) || isSnakeCasedVar(node.id.name))) {
+    // fix function names
+    const variableName = nodePath.value.id.name;
+
+    if (
+      !(collectedGlobals.globalsExposed && collectedGlobals.globalsExposed.includes(variableName)) &&
+      isFixableVariable(variableName)
+    ) {
       // Function name is not camel cased
-      const oldName = node.id.name;
-      node.id.name = _.camelCase(node.id.name);
+      nodePath.value.id.name = _.camelCase(variableName);
 
       // alter function invocations
-      const callExpressionCollec = root.find(j.CallExpression, (callExpressionNode) => {
-        return callExpressionNode.callee.name === oldName;
-      });
-
-      callExpressionCollec.forEach((callExpressionNodePath) => {
-        callExpressionNodePath.value.callee.name = _.camelCase(callExpressionNodePath.value.callee.name);
-      });
+      root
+        .find(j.CallExpression, (callExpressionNode) => {
+          return callExpressionNode.callee.name === variableName;
+        })
+        .forEach((callExpressionNodePath) => {
+          callExpressionNodePath.value.callee.name = _.camelCase(callExpressionNodePath.value.callee.name);
+        });
 
       // alter exposed property values
-      const propertyCollec = root.find(j.Property, (propertyNode) => {
-        return propertyNode.value.name === oldName;
-      });
-
-      propertyCollec.forEach((propertyNodePath) => {
-        propertyNodePath.value.value.name = _.camelCase(propertyNodePath.value.value.name);
-      });
+      root
+        .find(j.Property, (propertyNode) => {
+          return propertyNode.value.name === variableName;
+        })
+        .forEach((propertyNodePath) => {
+          propertyNodePath.value.value.name = _.camelCase(propertyNodePath.value.value.name);
+        });
     }
   });
 
   // Fix all functional expressions params
   const functionExpressionCollec = root.find(j.FunctionExpression);
-  fixFunctionParams(functionExpressionCollec);
+
+  functionExpressionCollec.forEach((nodePath) => {
+    // Fix all functional params
+    fixFunctionParams(nodePath);
+  });
 
   const results = root.toSource();
 
@@ -181,3 +182,5 @@ module.exports = (filePath, updateInplace = false) => {
 
   return results;
 };
+
+module.exports = transformNoCamelCaseVars;
