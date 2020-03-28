@@ -23,99 +23,197 @@ const transformDestructAssign = (filePath, updateInplace = false) => {
 
   const root = j(source);
 
-  ['props', 'state'].forEach((type) => {
-    const nodePathsCollection = root
-      .find(j.MemberExpression, (node) => {
-        return node.object.type === 'ThisExpression' && node.property.name === type;
-      })
-      .filter((nodePath) => {
-        return nodePath.parentPath.value.type === 'MemberExpression';
+  const classDeclarationCollec = root.find(j.ClassDeclaration);
+
+  classDeclarationCollec.forEach((classDeclarationNodePath) => {
+    // exports a class component
+    ['props', 'state'].forEach((type) => {
+      const nodePathsCollection = j(classDeclarationNodePath)
+        .find(j.MemberExpression, (node) => {
+          return node.object.type === 'ThisExpression' && node.property.name === type;
+        })
+        .filter((nodePath) => {
+          return nodePath.parentPath.value.type === 'MemberExpression';
+        });
+
+      // group nodes with common scope together
+      const groupedByScopeNodePathsObj = _.chain(nodePathsCollection.paths())
+        .groupBy(
+          (path) =>
+            j(path)
+              .closestScope()
+              .get(0).scope.path.value.start
+        )
+        .value();
+
+      const scopesStart = Object.keys(groupedByScopeNodePathsObj);
+
+      scopesStart.forEach((start) => {
+        const nodePaths = groupedByScopeNodePathsObj[start];
+
+        const groupedCollection = j(nodePaths);
+
+        let closestScopeCollec = groupedCollection.closestScope(j.Node, { start: parseInt(start, 10) });
+
+        // debugger;
+
+        const classProp = ['MethodDefinition', 'ClassProperty'].find((typeProp) => {
+          return closestScopeCollec.closest(j[typeProp]).length;
+        });
+
+        closestScopeCollec = j(closestScopeCollec.closest(j[classProp]).get('value'));
+
+        const blockStatementCollec = closestScopeCollec.find(j.BlockStatement);
+
+        const blockStatementNode = blockStatementCollec
+          .paths()
+          .find((path) => path.parent === closestScopeCollec.paths()[0]).node;
+
+        let dependencies = [];
+
+        groupedCollection.forEach((nodePath) => {
+          dependencies.push(nodePath.parentPath.value.property.name);
+
+          j(nodePath)
+            .closest(j.MemberExpression)
+            .paths()[0]
+            .replace(nodePath.parentPath.value.property);
+        });
+
+        dependencies = _.uniq(dependencies);
+
+        const constDeclarationCollec = closestScopeCollec.find(j.VariableDeclaration, (node) => {
+          return node.kind === 'const';
+        });
+
+        const thisDotTypeDeclaratorCollec = constDeclarationCollec.find(j.VariableDeclarator, (node) => {
+          return (
+            node.init.type === 'MemberExpression' &&
+            node.init.object.type === 'ThisExpression' &&
+            node.init.property.type === 'Identifier' &&
+            node.init.property.name === type
+          );
+        });
+
+        // const blockStatementNode = getBlockStatementNode(closestScopeCollec);
+
+        if (thisDotTypeDeclaratorCollec.length) {
+          const thisDotTypeDeclarationCollec = thisDotTypeDeclaratorCollec.closest(j.VariableDeclaration);
+          // there is already const declaration inside BlockStatement
+          const objectExpressionProperties = thisDotTypeDeclaratorCollec.get('id').value.properties;
+
+          const alreadyDeclaredProps = objectExpressionProperties.map((property) => {
+            return property.value.name;
+          });
+
+          dependencies = dependencies.filter((dep) => {
+            return !alreadyDeclaredProps.includes(dep);
+          });
+
+          if (!dependencies.length) {
+            return;
+          }
+
+          const newProperties = dependencies.map((dep) => {
+            return j.property('init', j.identifier(dep), j.identifier(dep));
+          });
+
+          thisDotTypeDeclaratorCollec.get('id').value.properties = objectExpressionProperties.concat(newProperties);
+
+          // move this const decl to the top of the scope
+          const thisDotTypeDeclarationNode = thisDotTypeDeclarationCollec.nodes()[0];
+
+          if (!thisDotTypeDeclarationNode.start) {
+            // still hasn't got start
+            return;
+          }
+
+          blockStatementNode.body = _.filter(blockStatementNode.body, (node) => {
+            return node.start !== thisDotTypeDeclarationNode.start;
+          });
+
+          blockStatementNode.body.unshift(thisDotTypeDeclarationNode);
+        } else {
+          if (!dependencies.length) {
+            return;
+          }
+
+          const newProperties = dependencies.map((dep) => {
+            return j.property('init', j.identifier(dep), j.identifier(dep));
+          });
+          // declare at each scope level
+          blockStatementNode.body.unshift(
+            j.variableDeclaration('const', [
+              j.variableDeclarator(
+                j.objectPattern(newProperties),
+                j.memberExpression(j.thisExpression(), j.identifier(type))
+              )
+            ])
+          );
+        }
       });
+    });
+  });
 
-    // group nodes with common scope together
-    const groupedByScopeNodePathsObj = _.chain(nodePathsCollection.paths())
-      .groupBy(
-        (path) =>
-          j(path)
-            .closestScope()
-            .get(0).scope.path.value.start
-      )
-      .value();
+  // exports a functional component
+  const type = 'props';
 
-    const scopesStart = Object.keys(groupedByScopeNodePathsObj);
+  const arrowFunctionExpressionCollec = root.find(j.ArrowFunctionExpression, (node) => {
+    return node.params.find((param) => {
+      return param.name === type;
+    });
+  });
 
-    scopesStart.forEach((start) => {
-      const nodePaths = groupedByScopeNodePathsObj[start];
+  arrowFunctionExpressionCollec.forEach((arrowFunctionNodePath) => {
+    const nodePathsCollection = j(arrowFunctionNodePath).find(j.MemberExpression, (node) => {
+      return node.object.name === type;
+    });
 
-      const groupedCollection = j(nodePaths);
+    let dependencies = [];
 
-      let closestScopeCollec = groupedCollection.closestScope(j.Node, { start: parseInt(start, 10) });
+    const propAliasMap = {};
 
-      let dependencies = [];
+    debugger;
 
-      groupedCollection.forEach((nodePath) => {
-        dependencies.push(nodePath.parentPath.value.property.name);
+    nodePathsCollection.forEach((nodePath) => {
+      const propName = nodePath.value.property.name;
+      dependencies.push(propName);
+
+      const parentNode = nodePath.parentPath.value;
+
+      if (parentNode.type === 'VariableDeclarator') {
+        propAliasMap[propName] = parentNode.id.name;
 
         j(nodePath)
-          .closest(j.MemberExpression)
+          .closest(j.VariableDeclaration)
           .paths()[0]
-          .replace(nodePath.parentPath.value.property);
-      });
-
-      let blockStatementCollec = closestScopeCollec.find(j.BlockStatement);
-
-      if (!blockStatementCollec.length) {
-        closestScopeCollec = closestScopeCollec.closest(j.FunctionExpression);
-
-        blockStatementCollec = closestScopeCollec.find(j.BlockStatement);
+          .replace();
       }
 
-      const blockStatementNode = blockStatementCollec
-        .paths()
-        .find((path) => path.parent === closestScopeCollec.paths()[0]).node;
-
-      const thisPropsCollec = closestScopeCollec.find(j.VariableDeclarator, (node) => {
-        return (
-          node.init &&
-          node.init.type === 'MemberExpression' &&
-          node.init.object.type === 'ThisExpression' &&
-          node.init.property.type === 'Identifier' &&
-          node.init.property.name === type
-        );
-      });
-
-      if (thisPropsCollec.length) {
-        // there is already const declaration inside BlockStatement
-        const objectExpressionProperties = thisPropsCollec.get('id').value.properties;
-
-        const alreadyDeclaredProps = objectExpressionProperties.map((property) => {
-          return property.value.name;
-        });
-
-        dependencies = _.uniq(dependencies).filter((dep) => {
-          return !alreadyDeclaredProps.includes(dep);
-        });
-
-        const newProperties = dependencies.map((dep) => {
-          return j.property('init', j.identifier(dep), j.identifier(dep));
-        });
-
-        thisPropsCollec.get('id').value.properties = objectExpressionProperties.concat(newProperties);
-      } else {
-        const newProperties = _.uniq(dependencies).map((dep) => {
-          return j.property('init', j.identifier(dep), j.identifier(dep));
-        });
-        // declare at each scope level
-        blockStatementNode.body.unshift(
-          j.variableDeclaration('const', [
-            j.variableDeclarator(
-              j.objectPattern(newProperties),
-              j.memberExpression(j.thisExpression(), j.identifier(type))
-            )
-          ])
-        );
-      }
+      j(nodePath)
+        .paths()[0]
+        .replace(nodePath.value.property);
     });
+
+    dependencies = _.uniq(dependencies);
+
+    if (dependencies.length) {
+      const properties = dependencies.map((dep) => {
+        if (propAliasMap[dep]) {
+          return j.property('init', j.identifier(dep), j.identifier(propAliasMap[dep]));
+        }
+
+        return j.property('init', j.identifier(dep), j.identifier(dep));
+      });
+
+      arrowFunctionNodePath.value.params = arrowFunctionNodePath.value.params.map((node) => {
+        if (node.name === type) {
+          return j.objectPattern(properties);
+        }
+
+        return node;
+      });
+    }
   });
 
   const results = root.toSource();

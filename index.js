@@ -83,27 +83,33 @@ function executeTransformer(filePath) {
 
   const source = fs.readFileSync(resolve(__dirname, filePath), { encoding: 'utf8' });
 
-  const ast = acorn.parse(source, {
-    loc: true
-  });
+  const skipGlobals = ['transformDestructAssign', 'transformActionAs'].includes(this.name);
 
-  const globalsExposed = Object.keys(findGlobalsExposed(ast));
-
-  let dependencies = findGlobals(ast)
-    .filter((dep) => allExternalDeps.indexOf(dep.name) === -1)
-    .filter((dep) => ignoreableExternalDeps.indexOf(dep.name) === -1);
-
-  if (fixOnlyDependencies) {
-    dependencies = [...new Set(dependencies.filter((e) => allGlobalsExposed.indexOf(e.name) === -1))];
-
-    results = this(filePath, dependencies);
+  if (skipGlobals) {
+    results = this(filePath);
   } else {
-    dependencies = [...new Set(dependencies)];
-
-    results = this(filePath, false, {
-      globalsExposed,
-      dependencies
+    const ast = acorn.parse(source, {
+      loc: true
     });
+
+    const globalsExposed = Object.keys(findGlobalsExposed(ast));
+
+    let dependencies = findGlobals(ast)
+      .filter((dep) => allExternalDeps.indexOf(dep.name) === -1)
+      .filter((dep) => ignoreableExternalDeps.indexOf(dep.name) === -1);
+
+    if (fixOnlyDependencies) {
+      dependencies = [...new Set(dependencies.filter((e) => allGlobalsExposed.indexOf(e.name) === -1))];
+
+      results = this(filePath, dependencies);
+    } else {
+      dependencies = [...new Set(dependencies)];
+
+      results = this(filePath, false, {
+        globalsExposed,
+        dependencies
+      });
+    }
   }
 
   if (results) {

@@ -68,7 +68,7 @@ const ignoreableExternalDeps = Object.keys(dependenciesObj).reduce(
 //  */
 
 // // will update the file instead of returning the modified contents
-// transformDestructAssign('/Users/Anshul/railsApp/react/app/screenshots/src/scripts/Status/containers/index.js', true);
+// transformDestructAssign('/Users/Anshul/railsApp/react/app/screenshots/src/scripts/Preview/containers/index.js', true);
 // // will return the the modified contents file instead of directly fixing
 // transformDestructAssign('/Users/Anshul/railsApp/react/app/app_live/src/DevTools/Inspector/components/Properties.js');
 
