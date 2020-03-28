@@ -34,7 +34,7 @@
   "author": "Anshul Nema",
   "license": "MIT",
   "dependencies": {
-    "acorn": "7.1.0",
+    "acorn": "7.1.1",
     "acorn-globals": "4.3.4",
     "acorn-jsx": "^5.2.0",
     "acorn-walk": "7.0.0",
