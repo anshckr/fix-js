@@ -6,7 +6,8 @@ const {
   transformUnusedAssignedVars,
   transformNoCamelCaseVars,
   transformDestructAssign,
-  transformActionAs
+  transformActionAs,
+  transformBlockScopedVar
 } = require('../index');
 const dependenciesObj = require('./dependencies.json');
 
@@ -31,7 +32,7 @@ const ignoreableExternalDeps = Object.keys(dependenciesObj).reduce(
 // fixJSsAtPath(directoryPath, transformNoCamelCaseVars, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
 // fixJSsAtPath(directoryPath, transformDestructAssign, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
 // fixJSsAtPath(directoryPath, transformActionAs, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
-
+// fixJSsAtPath(directoryPath, transformBlockScopedVar, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
 // /**
 //  * { Example usage of transformLeakingGlobalsVars }
 //  */
@@ -80,3 +81,12 @@ const ignoreableExternalDeps = Object.keys(dependenciesObj).reduce(
 // transformActionAs('/Users/Anshul/railsApp/react/app/app_live/src/DevTools/Inspector/components/ScreenshotRect.js', true);
 // // will return the the modified contents file instead of directly fixing
 // transformActionAs('/Users/Anshul/railsApp/react/app/app_live/src/DevTools/Inspector/components/Properties.js');
+
+// /**
+//  * { Example usage of transformBlockScopedVar }
+//  */
+
+// // will update the file instead of returning the modified contents
+// transformBlockScopedVar('/Users/Anshul/railsApp/app/assets/javascripts/vnc.1.js', true);
+// // will return the the modified contents file instead of directly fixing
+// transformBlockScopedVar('/Users/Anshul/railsApp/react/app/app_live/src/DevTools/Inspector/components/Properties.js');
