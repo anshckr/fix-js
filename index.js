@@ -19,6 +19,7 @@ const transformNoCamelCaseVars = require('./transforms/no-camelcase-vars');
 const transformDestructAssign = require('./transforms/react-destruct-assign');
 const transformActionAs = require('./transforms/react-action-as');
 const transformBlockScopedVar = require('./transforms/block-scoped-vars');
+const transformNoLonelyIf = require('./transforms/no-lonely-if');
 
 /* will be ignored in dependencies -- start */
 
@@ -208,5 +209,6 @@ module.exports = {
   transformNoCamelCaseVars,
   transformDestructAssign,
   transformActionAs,
-  transformBlockScopedVar
+  transformBlockScopedVar,
+  transformNoLonelyIf
 };
