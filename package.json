@@ -29,31 +29,35 @@
     "jscodeshift",
     "react",
     "react/destructuring-assignment",
-    "unused assigned variables"
+    "unused assigned variables",
+    "no-camelcase",
+    "no-lonely-if",
+    "block-scoped-var",
+    "no-nested-ternary"
   ],
   "author": "Anshul Nema",
   "license": "MIT",
   "dependencies": {
     "acorn": "7.1.1",
-    "acorn-globals": "4.3.4",
+    "acorn-globals": "6.0.0",
     "acorn-jsx": "^5.2.0",
-    "acorn-walk": "7.0.0",
+    "acorn-walk": "7.1.1",
     "jscodeshift": "0.7.0",
     "lodash": "4.17.15",
-    "mocha": "6.2.2"
+    "mocha": "7.1.1"
   },
   "devDependencies": {
     "chai": "4.2.0",
     "chai-as-promised": "7.1.1",
     "eslint": "6.8.0",
-    "eslint-config-airbnb-base": "14.0.0",
-    "eslint-config-prettier": "6.8.0",
-    "eslint-plugin-import": "2.19.1",
+    "eslint-config-airbnb-base": "14.1.0",
+    "eslint-config-prettier": "6.10.1",
+    "eslint-plugin-import": "2.20.2",
     "eslint-plugin-prettier": "3.1.2",
-    "nyc": "15.0.0",
-    "prettier": "1.19.1",
-    "sinon": "8.0.1",
-    "sinon-chai": "3.4.0"
+    "nyc": "15.0.1",
+    "prettier": "2.0.2",
+    "sinon": "9.0.1",
+    "sinon-chai": "3.5.0"
   },
   "repository": {
     "type": "git",

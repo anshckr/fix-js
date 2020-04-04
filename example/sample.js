@@ -13,7 +13,8 @@ const {
 } = require('../index');
 const dependenciesObj = require('./dependencies.json');
 
-const directoryPath = '/Users/Anshul/railsApp/app/assets/javascripts/';
+// const directoryPath = '/Users/Anshul/railsApp/public/javascripts/';
+// const directoryPath = '/Users/Anshul/railsApp/app/assets/javascripts/';
 // const directoryPath = '/Users/Anshul/railsApp/react/app/';
 const ignoreFilesRegex = /^socket|polyfill|prettify|run_prettify|\.min\.js/;
 const ignoreFoldersRegex = /\/libraries|google-code-prettify/;
