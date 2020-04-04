@@ -21,7 +21,10 @@ var {
   transformUnusedAssignedVars,
   transformNoCamelCaseVars,
   transformDestructAssign,
-  transformActionAs
+  transformActionAs,
+  transformBlockScopedVar,
+  transformNoLonelyIf,
+  transformNoNestedTernary
 } = require('@anshckr/fix-js');
 
 ```
@@ -37,6 +40,7 @@ var {
 | `paramsIgnoreFilesRegex` | `Regex` | **Optional**. Regular expression to match file names to ignore during transform. **Default:** /$^/ |
 | `paramsIgnoreFoldersRegex` | `Regex` | **Optional**. Regular expression to match folder names to ignore during transform. **Default:** /$^/ |
 | `paramsIgnoreableExternalDeps` | `Array` | **Optional**. Array of dependencies to ignore during transform. **Default:** [] |
+
 
 ### 2. `transformLeakingGlobalsVars` (Transformer to fix all the leaking globals from a JS file)
 
@@ -62,6 +66,7 @@ In the above code if we don't declare `i` in the upper scope like `var i` then `
 
 The utility will declare these types leaking variables
 
+
 ### 3. `transformUnusedAssignedVars` (Transformer to fix all the unused assigned variables from a JS file)
 
 | Parameter | Type | Description |
@@ -74,6 +79,7 @@ The utility will declare these types leaking variables
 | Type | Description |
 | :--- | :--- |
 | `String` | Transformed file content |
+
 
 ### 4. `transformNoCamelCaseVars` (Transformer to fix all the non camel cased variables from a JS file)
 
@@ -104,7 +110,6 @@ var someVar, $someVar;
 function someFunc() {}
 someFunc();
 ```
-
 
 ### 5. `transformDestructAssign` (Transformer to fix react/destructuring-assignment rule)
 
@@ -176,6 +181,124 @@ const mapDispatchToProps = (dispatch) =>
     },
     dispatch
   );
+```
+
+### 7. `transformBlockScopedVar` (Moves all the variable declarators to their scope level)
+
+| Parameter | Type | Description |
+| :--- | :--- | :--- |
+| `filePath `  | `String`  | **Required**. The file path you want to fix  |
+| `updateInplace ` | `Boolean` | **Optional**. Whether to update the file or not. **Default:** false |
+
+**Returns**
+
+| Type | Description |
+| :--- | :--- |
+| `String` | Transformed file content |
+
+```js
+function someFunc() {
+  if (someCondition) {
+    var i = 1;
+  } else {
+    var i = 2;
+  }
+
+  for (var j = 0; j < i; j++) {
+    ...
+  }
+
+  for (var k in someObj) {
+    ...
+  }
+}
+```
+
+The above will get converted to
+
+```js
+function someFunc() {
+  var i, j, k;
+  if (someCondition) {
+    i = 1;
+  } else {
+    i = 2;
+  }
+
+  for (j = 0; j < i; j++) {
+    ...
+  }
+
+  for (k in someObj) {
+    ...
+  }
+}
+```
+
+### 8. `transformNoLonelyIf` (Fixes eslint no-lonely-if rule)
+
+| Parameter | Type | Description |
+| :--- | :--- | :--- |
+| `filePath `  | `String`  | **Required**. The file path you want to fix  |
+| `updateInplace ` | `Boolean` | **Optional**. Whether to update the file or not. **Default:** false |
+
+**Returns**
+
+| Type | Description |
+| :--- | :--- |
+| `String` | Transformed file content |
+
+```js
+else {
+  if (someCondition) {
+    ...
+  } else {
+    ...
+  }
+}
+```
+
+The above will get converted to
+
+```js
+else if (someCondition) {
+  ...
+} else {
+  ...
+}
+```
+
+### 9. `transformNoNestedTernary` (Fixes eslint no-nested-ternary rule by converting the nested ConditionalExpressions into an IIFE block with If/Else Statements)
+
+| Parameter | Type | Description |
+| :--- | :--- | :--- |
+| `filePath `  | `String`  | **Required**. The file path you want to fix  |
+| `updateInplace ` | `Boolean` | **Optional**. Whether to update the file or not. **Default:** false |
+
+**Returns**
+
+| Type | Description |
+| :--- | :--- |
+| `String` | Transformed file content |
+
+```js
+a ? 'a' : b ? 'b' : 'c'
+```
+
+The above will get converted to
+
+```js
+(function() {
+  if (a) {
+    return 'a';
+  }
+
+  if (b) {
+    return 'b';
+  }
+
+  return 'c';
+})()
 ```
 
 ## Usage

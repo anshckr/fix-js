@@ -8,7 +8,8 @@ const {
   transformDestructAssign,
   transformActionAs,
   transformBlockScopedVar,
-  transformNoLonelyIf
+  transformNoLonelyIf,
+  transformNoNestedTernary
 } = require('../index');
 const dependenciesObj = require('./dependencies.json');
 
@@ -35,6 +36,7 @@ const ignoreableExternalDeps = Object.keys(dependenciesObj).reduce(
 // fixJSsAtPath(directoryPath, transformActionAs, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
 // fixJSsAtPath(directoryPath, transformBlockScopedVar, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
 // fixJSsAtPath(directoryPath, transformNoLonelyIf, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
+// fixJSsAtPath(directoryPath, transformNoNestedTernary, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
 // /**
 //  * { Example usage of transformLeakingGlobalsVars }
 //  */
@@ -101,3 +103,12 @@ const ignoreableExternalDeps = Object.keys(dependenciesObj).reduce(
 // transformNoLonelyIf('/Users/Anshul/railsApp/app/assets/javascripts/accounts/pricingWizard.js', true);
 // // will return the the modified contents file instead of directly fixing
 // transformNoLonelyIf('/Users/Anshul/railsApp/react/app/app_live/src/DevTools/Inspector/components/Properties.js');
+
+// /**
+//  * { Example usage of transformNoNestedTernary }
+//  */
+
+// // will update the file instead of returning the modified contents
+// transformNoNestedTernary('/Users/Anshul/railsApp/app/assets/javascripts/usage_reports/usage-report.js', true);
+// // will return the the modified contents file instead of directly fixing
+// transformNoNestedTernary('/Users/Anshul/railsApp/react/app/app_live/src/DevTools/Inspector/components/Properties.js');

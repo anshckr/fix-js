@@ -148,11 +148,10 @@ const handleDeclaratorsByScope = (closestScopeCollec, nodePath) => {
 };
 
 /**
- * { Transformer to fix all the unused assigned variables from a JS file }
+ * { Moves all the variable declarators to their scope level }
  *
  * @param      {String}   filePath                Path of the file to fix
  * @param      {Boolean}  [updateInplace=false]   Whether to update the file or not
- * @param      {Object}   [collectedGlobals={}]   Contains two keys globalsExposed, dependencies for the file
  * @return     {String}   { Transformed string to write to the file }
  */
 const transformBlockScopedVar = (filePath, updateInplace = false, collectedGlobals = {}) => {

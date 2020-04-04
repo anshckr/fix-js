@@ -1,13 +1,11 @@
 const fs = require('fs');
 const { resolve } = require('path');
 const jscodeshift = require('jscodeshift');
-const _ = require('lodash');
-// const acorn = require('acorn');
 
 const j = jscodeshift;
 
 /**
- * { Transformer to fix all the unused assigned variables from a JS file }
+ * { Fixes eslint no-lonely-if rule }
  *
  * @param      {String}   filePath                Path of the file to fix
  * @param      {Boolean}  [updateInplace=false]   Whether to update the file or not
@@ -41,8 +39,6 @@ const transformNoLonelyIf = (filePath, updateInplace = false) => {
   });
 
   validIfNodesCollec.forEach((nodePath) => {
-    debugger;
-
     const closestBlockStatementCollec = j(nodePath).closest(j.BlockStatement);
 
     const closestBlockStatementStart = closestBlockStatementCollec.nodes()[0].start;

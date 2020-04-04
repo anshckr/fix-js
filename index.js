@@ -20,6 +20,7 @@ const transformDestructAssign = require('./transforms/react-destruct-assign');
 const transformActionAs = require('./transforms/react-action-as');
 const transformBlockScopedVar = require('./transforms/block-scoped-vars');
 const transformNoLonelyIf = require('./transforms/no-lonely-if');
+const transformNoNestedTernary = require('./transforms/no-nested-ternary');
 
 /* will be ignored in dependencies -- start */
 
@@ -210,5 +211,6 @@ module.exports = {
   transformDestructAssign,
   transformActionAs,
   transformBlockScopedVar,
-  transformNoLonelyIf
+  transformNoLonelyIf,
+  transformNoNestedTernary
 };
