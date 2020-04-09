@@ -24,7 +24,8 @@ var {
   transformActionAs,
   transformBlockScopedVar,
   transformNoLonelyIf,
-  transformNoNestedTernary
+  transformNoNestedTernary,
+  transformNoUnderscoreDangle
 } = require('@anshckr/fix-js');
 
 ```
