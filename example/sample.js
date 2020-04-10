@@ -10,7 +10,8 @@ const {
   transformBlockScopedVar,
   transformNoLonelyIf,
   transformNoNestedTernary,
-  transformNoUnderscoreDangle
+  transformNoUnderscoreDangle,
+  transformNoUnusedVars
 } = require('../index');
 const dependenciesObj = require('./dependencies.json');
 
@@ -40,6 +41,7 @@ const ignoreableExternalDeps = Object.keys(dependenciesObj).reduce(
 // fixJSsAtPath(directoryPath, transformNoLonelyIf, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
 // fixJSsAtPath(directoryPath, transformNoNestedTernary, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
 // fixJSsAtPath(directoryPath, transformNoUnderscoreDangle, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
+// fixJSsAtPath(directoryPath, transformNoUnusedVars, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
 // /**
 //  * { Example usage of transformLeakingGlobalsVars }
 //  */
@@ -124,3 +126,12 @@ const ignoreableExternalDeps = Object.keys(dependenciesObj).reduce(
 // transformNoUnderscoreDangle('/Users/Anshul/railsApp/app/assets/javascripts/static/report_bug/slack.js', true);
 // // will return the the modified contents file instead of directly fixing
 // transformNoUnderscoreDangle('/Users/Anshul/railsApp/app/assets/javascripts/admin.js');
+
+// /**
+//  * { Example usage of transformNoUnusedVars }
+//  */
+
+// // will update the file instead of returning the modified contents
+// transformNoUnusedVars('/Users/Anshul/railsApp/app/assets/javascripts/static/rf-browser-list/rf-browser-list.js', true);
+// // will return the the modified contents file instead of directly fixing
+// transformNoUnusedVars('/Users/Anshul/railsApp/app/assets/javascripts/admin.js');

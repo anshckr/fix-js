@@ -193,12 +193,7 @@ const transformBlockScopedVar = (filePath, updateInplace = false, collectedGloba
 
     // group nodes with common scope together
     const groupedByScopeNodePathsObj = _.chain(groupedByVarNodePaths)
-      .groupBy(
-        (path) =>
-          j(path)
-            .closestScope()
-            .get(0).scope.path.value.start
-      )
+      .groupBy((path) => j(path).closestScope().get(0).scope.path.value.start)
       .value();
 
     const scopesStart = Object.keys(groupedByScopeNodePathsObj);

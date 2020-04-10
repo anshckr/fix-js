@@ -250,12 +250,7 @@ const transformLeakingGlobalsVars = (filePath, dependencies = [], updateInplace 
 
     // group nodes with common scope together
     const groupedByScopeNodePathsObj = _.chain(nodePathsCollection.paths())
-      .groupBy(
-        (path) =>
-          j(path)
-            .closestScope()
-            .get(0).scope.path.value.start
-      )
+      .groupBy((path) => j(path).closestScope().get(0).scope.path.value.start)
       .value();
 
     // var eachGroupHasAssignmentExp = true;

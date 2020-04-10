@@ -22,6 +22,7 @@ const transformBlockScopedVar = require('./transforms/block-scoped-vars');
 const transformNoLonelyIf = require('./transforms/no-lonely-if');
 const transformNoNestedTernary = require('./transforms/no-nested-ternary');
 const transformNoUnderscoreDangle = require('./transforms/no-underscore-dangle');
+const transformNoUnusedVars = require('./transforms/no-unused-vars');
 
 /* will be ignored in dependencies -- start */
 
@@ -214,5 +215,6 @@ module.exports = {
   transformBlockScopedVar,
   transformNoLonelyIf,
   transformNoNestedTernary,
-  transformNoUnderscoreDangle
+  transformNoUnderscoreDangle,
+  transformNoUnusedVars
 };

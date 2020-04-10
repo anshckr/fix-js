@@ -28,10 +28,7 @@ const isSnakeCasedVar = (value) => {
 };
 
 const getNonJqueryName = (jqueryObjName) => {
-  return jqueryObjName
-    .split('$')
-    .slice(-1)
-    .join('$');
+  return jqueryObjName.split('$').slice(-1).join('$');
 };
 
 const isFixableVariable = (variableName) => {

@@ -38,12 +38,7 @@ const transformDestructAssign = (filePath, updateInplace = false) => {
 
       // group nodes with common scope together
       const groupedByScopeNodePathsObj = _.chain(nodePathsCollection.paths())
-        .groupBy(
-          (path) =>
-            j(path)
-              .closestScope()
-              .get(0).scope.path.value.start
-        )
+        .groupBy((path) => j(path).closestScope().get(0).scope.path.value.start)
         .value();
 
       const scopesStart = Object.keys(groupedByScopeNodePathsObj);
@@ -74,10 +69,7 @@ const transformDestructAssign = (filePath, updateInplace = false) => {
         groupedCollection.forEach((nodePath) => {
           dependencies.push(nodePath.parentPath.value.property.name);
 
-          j(nodePath)
-            .closest(j.MemberExpression)
-            .paths()[0]
-            .replace(nodePath.parentPath.value.property);
+          j(nodePath).closest(j.MemberExpression).paths()[0].replace(nodePath.parentPath.value.property);
         });
 
         dependencies = _.uniq(dependencies);
@@ -173,8 +165,6 @@ const transformDestructAssign = (filePath, updateInplace = false) => {
 
     const propAliasMap = {};
 
-    debugger;
-
     nodePathsCollection.forEach((nodePath) => {
       const propName = nodePath.value.property.name;
       dependencies.push(propName);
@@ -184,15 +174,10 @@ const transformDestructAssign = (filePath, updateInplace = false) => {
       if (parentNode.type === 'VariableDeclarator') {
         propAliasMap[propName] = parentNode.id.name;
 
-        j(nodePath)
-          .closest(j.VariableDeclaration)
-          .paths()[0]
-          .replace();
+        j(nodePath).closest(j.VariableDeclaration).paths()[0].replace();
       }
 
-      j(nodePath)
-        .paths()[0]
-        .replace(nodePath.value.property);
+      j(nodePath).paths()[0].replace(nodePath.value.property);
     });
 
     dependencies = _.uniq(dependencies);
