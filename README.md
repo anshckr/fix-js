@@ -1,16 +1,156 @@
-[![MIT License][license-image]][license-url]
+This repository contains a collection of codemod scripts for use with
+[JSCodeshift](https://github.com/facebook/jscodeshift) + it can also be added as a package to use the other transformers it exposes
 
-## Installation
+## Setup & Run When Using 'jscodeshift'
 
-Using npm:
-
-```shell
-$ npm i -g npm
-$ npm i @anshckr/fix-js
+```sh
+npm install -g jscodeshift
+git clone https://github.com/anshckr/fix-js.git
+jscodeshift -t <codemod-script> <file>
 ```
 
-Note: add --save if you are using npm < 5.0.0
+Use the `-d` option for a dry-run and use `-p` to print the output for
+comparison.
 
+### Recast Options
+
+[Options to recast's printer](https://github.com/benjamn/recast/blob/master/lib/options.ts) can be provided through the `printOptions` command line argument
+
+```sh
+jscodeshift -t transform.js <file> --printOptions='{"quote":"double"}'
+```
+
+### Included Scripts
+
+#### `no-lonely-if`
+
+Fixes eslint no-lonely-if rule
+
+```sh
+jscodeshift -t ./transforms/no-lonely-if.js <file>
+```
+
+```js
+else {
+  if (someCondition) {
+    ...
+  } else {
+    ...
+  }
+}
+```
+
+The above will get converted to
+
+```js
+else if (someCondition) {
+  ...
+} else {
+  ...
+}
+```
+
+#### `no-nested-ternary`
+
+Fixes eslint no-nested-ternary rule by converting the nested ConditionalExpressions into an IIFE block with If/Else Statements
+
+```sh
+jscodeshift -t ./transforms/no-nested-ternary.js <file>
+```
+
+```js
+a ? 'a' : b ? 'b' : 'c'
+```
+
+The above will get converted to
+
+```js
+(function() {
+  if (a) {
+    return 'a';
+  }
+
+  if (b) {
+    return 'b';
+  }
+
+  return 'c';
+})()
+```
+
+#### `no-unused-vars`
+
+```sh
+jscodeshift -t ./transforms/no-unused-vars.js <file>
+```
+
+#### `react-action-as`
+
+Transforms all named export actions use 'as' while importing. Also converts the 'bindActionCreators' objectExpressionNode to use the as imported action
+
+```sh
+jscodeshift -t ./transforms/react-action-as.js <file>
+```
+
+```jsx
+import { someAction } from '../actions';
+
+const mapDispatchToProps = (dispatch) =>
+  bindActionCreators(
+    {
+      someAction
+    },
+    dispatch
+  );
+```
+
+The above will get converted to
+
+```jsx
+import { someAction as someActionAction } from '../actions';
+
+const mapDispatchToProps = (dispatch) =>
+  bindActionCreators(
+    {
+      someAction: someActionAction
+    },
+    dispatch
+  );
+```
+
+#### `react-destruct-assign`
+
+Transformer to fix react/destructuring-assignment rule
+
+```sh
+jscodeshift -t ./transforms/react-destruct-assign.js <file>
+```
+
+```jsx
+render() {
+    if (this.props.someProp) {
+        return this.state.someState;
+    }
+}
+```
+
+The above will get converted to
+
+```jsx
+render() {
+    const { someProp } = this.props;
+    const { someState } = this.state;
+    if (someProp) {
+        return someState;
+    }
+}
+```
+
+## Setup & Run When Using As A Package
+
+```sh
+$ npm i @anshckr/fix-js
+```
 In Node.js:
 
 ```js
@@ -20,11 +160,7 @@ var {
   transformLeakingGlobalsVars,
   transformUnusedAssignedVars,
   transformNoCamelCaseVars,
-  transformDestructAssign,
-  transformActionAs,
   transformBlockScopedVar,
-  transformNoLonelyIf,
-  transformNoNestedTernary,
   transformNoUnderscoreDangle
 } = require('@anshckr/fix-js');
 
@@ -112,79 +248,7 @@ function someFunc() {}
 someFunc();
 ```
 
-### 5. `transformDestructAssign` (Transformer to fix react/destructuring-assignment rule)
-
-| Parameter | Type | Description |
-| :--- | :--- | :--- |
-| `filePath `  | `String`  | **Required**. The file path you want to fix  |
-| `updateInplace ` | `Boolean` | **Optional**. Whether to update the file or not. **Default:** false |
-
-**Returns**
-
-| Type | Description |
-| :--- | :--- |
-| `String` | Transformed file content |
-
-```jsx
-render() {
-    if (this.props.someProp) {
-        return this.state.someState;
-    }
-}
-```
-
-The above will get converted to
-
-```jsx
-render() {
-    const { someProp } = this.props;
-    const { someState } = this.state;
-    if (someProp) {
-        return someState;
-    }
-}
-```
-
-### 6. `transformActionAs` (Transforms all named export actions use 'as' while importing. Also converts the 'bindActionCreators' objectExpressionNode to use the as imported action)
-
-| Parameter | Type | Description |
-| :--- | :--- | :--- |
-| `filePath `  | `String`  | **Required**. The file path you want to fix  |
-| `updateInplace ` | `Boolean` | **Optional**. Whether to update the file or not. **Default:** false |
-
-**Returns**
-
-| Type | Description |
-| :--- | :--- |
-| `String` | Transformed file content |
-
-```jsx
-import { someAction } from '../actions';
-
-const mapDispatchToProps = (dispatch) =>
-  bindActionCreators(
-    {
-      someAction
-    },
-    dispatch
-  );
-```
-
-The above will get converted to
-
-```jsx
-import { someAction as someActionAction } from '../actions';
-
-const mapDispatchToProps = (dispatch) =>
-  bindActionCreators(
-    {
-      someAction: someActionAction
-    },
-    dispatch
-  );
-```
-
-### 7. `transformBlockScopedVar` (Moves all the variable declarators to their scope level)
+### 5. `transformBlockScopedVar` (Moves all the variable declarators to their scope level)
 
 | Parameter | Type | Description |
 | :--- | :--- | :--- |
@@ -236,12 +300,13 @@ function someFunc() {
 }
 ```
 
-### 8. `transformNoLonelyIf` (Fixes eslint no-lonely-if rule)
+### 6. `transformNoUnderscoreDangle` (Transformer to fix leading '__' in function names to "\_", removes "\_" from function params)
 
 | Parameter | Type | Description |
 | :--- | :--- | :--- |
 | `filePath `  | `String`  | **Required**. The file path you want to fix  |
 | `updateInplace ` | `Boolean` | **Optional**. Whether to update the file or not. **Default:** false |
+| `collectedGlobals ` | `Object` | **Optional**. Contains two keys globalsExposed, dependencies for the file. **Default:** {} |
 
 **Returns**
 
@@ -249,57 +314,22 @@ function someFunc() {
 | :--- | :--- |
 | `String` | Transformed file content |
 
+**Example**
+
 ```js
-else {
-  if (someCondition) {
-    ...
-  } else {
-    ...
-  }
+function __someFunc(_someParam) {
+  ..._someParam
 }
+__someFunc();
 ```
 
 The above will get converted to
 
 ```js
-else if (someCondition) {
-  ...
-} else {
-  ...
+function _someFunc(someParam) {
+  ...someParam
 }
-```
-
-### 9. `transformNoNestedTernary` (Fixes eslint no-nested-ternary rule by converting the nested ConditionalExpressions into an IIFE block with If/Else Statements)
-
-| Parameter | Type | Description |
-| :--- | :--- | :--- |
-| `filePath `  | `String`  | **Required**. The file path you want to fix  |
-| `updateInplace ` | `Boolean` | **Optional**. Whether to update the file or not. **Default:** false |
-
-**Returns**
-
-| Type | Description |
-| :--- | :--- |
-| `String` | Transformed file content |
-
-```js
-a ? 'a' : b ? 'b' : 'c'
-```
-
-The above will get converted to
-
-```js
-(function() {
-  if (a) {
-    return 'a';
-  }
-
-  if (b) {
-    return 'b';
-  }
-
-  return 'c';
-})()
+_someFunc();
 ```
 
 ## Usage
@@ -316,6 +346,4 @@ Give a ⭐️ if this project helped you!
 
 ## License
 
-@anshckr/fix-js is freely distributable under the terms of the [MIT license](https://github.com/anshckr/fix-js/blob/master/LICENSE).
-[license-image]: http://img.shields.io/badge/license-MIT-blue.svg?style=flat
-[license-url]: LICENSE
+@anshckr/fix-js is freely distributable under the terms of the [MIT license](https://github.com/anshckr/fix-js/blob/master/LICENSE)

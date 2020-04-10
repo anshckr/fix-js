@@ -1,31 +1,14 @@
-const fs = require('fs');
-const { resolve } = require('path');
-const jscodeshift = require('jscodeshift');
 const _ = require('lodash');
 
-const j = jscodeshift;
+module.exports = (file, api, options) => {
+  const j = api.jscodeshift;
 
-/**
- * { Transformer to fix react/destructuring-assignment rule }
- *
- * @param      {String}   filePath                Path of the file to fix
- * @param      {Boolean}  [updateInplace=false]   Whether to update the file or not
- * @return     {String}   { Transformed string to write to the file }
- */
-const transformDestructAssign = (filePath, updateInplace = false) => {
-  if (filePath.constructor !== String) {
-    throw new Error('filePath should be a String');
-  }
+  const printOptions = options.printOptions || { quote: 'single' };
+  const root = j(file.source);
 
-  console.log('\nFixing FileName - %s\n', filePath);
+  // console.log('\nFixing FilePath - %s\n', file.path);
 
-  const source = fs.readFileSync(resolve(__dirname, filePath), { encoding: 'utf8' });
-
-  const root = j(source);
-
-  const classDeclarationCollec = root.find(j.ClassDeclaration);
-
-  classDeclarationCollec.forEach((classDeclarationNodePath) => {
+  const transformedClassDeclaration = root.find(j.ClassDeclaration).forEach((classDeclarationNodePath) => {
     // exports a class component
     ['props', 'state'].forEach((type) => {
       const nodePathsCollection = j(classDeclarationNodePath)
@@ -49,8 +32,6 @@ const transformDestructAssign = (filePath, updateInplace = false) => {
         const groupedCollection = j(nodePaths);
 
         let closestScopeCollec = groupedCollection.closestScope(j.Node, { start: parseInt(start, 10) });
-
-        // debugger;
 
         const classProp = ['MethodDefinition', 'ClassProperty'].find((typeProp) => {
           return closestScopeCollec.closest(j[typeProp]).length;
@@ -86,8 +67,6 @@ const transformDestructAssign = (filePath, updateInplace = false) => {
             node.init.property.name === type
           );
         });
-
-        // const blockStatementNode = getBlockStatementNode(closestScopeCollec);
 
         if (thisDotTypeDeclaratorCollec.length) {
           const thisDotTypeDeclarationCollec = thisDotTypeDeclaratorCollec.closest(j.VariableDeclaration);
@@ -150,64 +129,56 @@ const transformDestructAssign = (filePath, updateInplace = false) => {
   // exports a functional component
   const type = 'props';
 
-  const arrowFunctionExpressionCollec = root.find(j.ArrowFunctionExpression, (node) => {
-    return node.params.find((param) => {
-      return param.name === type;
-    });
-  });
+  const transformedArrowFunctionExpression = root
+    .find(j.ArrowFunctionExpression, (node) => {
+      return node.params.find((param) => {
+        return param.name === type;
+      });
+    })
+    .forEach((arrowFunctionNodePath) => {
+      const nodePathsCollection = j(arrowFunctionNodePath).find(j.MemberExpression, (node) => {
+        return node.object.name === type;
+      });
 
-  arrowFunctionExpressionCollec.forEach((arrowFunctionNodePath) => {
-    const nodePathsCollection = j(arrowFunctionNodePath).find(j.MemberExpression, (node) => {
-      return node.object.name === type;
-    });
+      let dependencies = [];
 
-    let dependencies = [];
+      const propAliasMap = {};
 
-    const propAliasMap = {};
+      nodePathsCollection.forEach((nodePath) => {
+        const propName = nodePath.value.property.name;
+        dependencies.push(propName);
 
-    nodePathsCollection.forEach((nodePath) => {
-      const propName = nodePath.value.property.name;
-      dependencies.push(propName);
+        const parentNode = nodePath.parentPath.value;
 
-      const parentNode = nodePath.parentPath.value;
+        if (parentNode.type === 'VariableDeclarator') {
+          propAliasMap[propName] = parentNode.id.name;
 
-      if (parentNode.type === 'VariableDeclarator') {
-        propAliasMap[propName] = parentNode.id.name;
+          j(nodePath).closest(j.VariableDeclaration).paths()[0].replace();
+        }
 
-        j(nodePath).closest(j.VariableDeclaration).paths()[0].replace();
+        j(nodePath).paths()[0].replace(nodePath.value.property);
+      });
+
+      dependencies = _.uniq(dependencies);
+
+      if (dependencies.length) {
+        const properties = dependencies.map((dep) => {
+          if (propAliasMap[dep]) {
+            return j.property('init', j.identifier(dep), j.identifier(propAliasMap[dep]));
+          }
+
+          return j.property('init', j.identifier(dep), j.identifier(dep));
+        });
+
+        arrowFunctionNodePath.value.params = arrowFunctionNodePath.value.params.map((node) => {
+          if (node.name === type) {
+            return j.objectPattern(properties);
+          }
+
+          return node;
+        });
       }
-
-      j(nodePath).paths()[0].replace(nodePath.value.property);
     });
 
-    dependencies = _.uniq(dependencies);
-
-    if (dependencies.length) {
-      const properties = dependencies.map((dep) => {
-        if (propAliasMap[dep]) {
-          return j.property('init', j.identifier(dep), j.identifier(propAliasMap[dep]));
-        }
-
-        return j.property('init', j.identifier(dep), j.identifier(dep));
-      });
-
-      arrowFunctionNodePath.value.params = arrowFunctionNodePath.value.params.map((node) => {
-        if (node.name === type) {
-          return j.objectPattern(properties);
-        }
-
-        return node;
-      });
-    }
-  });
-
-  const results = root.toSource();
-
-  if (updateInplace) {
-    fs.writeFileSync(resolve(__dirname, filePath), results.replace(/;;/g, ';'));
-  }
-
-  return results;
+  return transformedClassDeclaration || transformedArrowFunctionExpression ? root.toSource(printOptions) : null;
 };
-
-module.exports = transformDestructAssign;

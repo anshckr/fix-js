@@ -163,7 +163,7 @@ const transformBlockScopedVar = (filePath, updateInplace = false, collectedGloba
 
   const root = j(source);
 
-  console.log('\nFixing FilePath - %s\n', filePath);
+  // console.log('\nFixing FilePath - %s\n', filePath);
 
   let variableDeclaratorCollec;
 
@@ -187,7 +187,7 @@ const transformBlockScopedVar = (filePath, updateInplace = false, collectedGloba
   // console.log('\nPrinting Variable Names - %s\n', JSON.stringify(variableNames));
 
   variableNames.forEach((variable) => {
-    console.log('\nFixing Variable - %s\n', variable);
+    // console.log('\nFixing Variable - %s\n', variable);
 
     const groupedByVarNodePaths = groupedByVarNodePathsObj[variable];
 

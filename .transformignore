@@ -1,0 +1,7 @@
+^socket
+.min.js
+polyfill
+prettify
+run_prettify
+libraries
+google-code-prettify

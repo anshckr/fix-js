@@ -1,64 +1,42 @@
-const fs = require('fs');
-const { resolve } = require('path');
-const jscodeshift = require('jscodeshift');
+module.exports = (file, api, options) => {
+  const j = api.jscodeshift;
 
-const j = jscodeshift;
+  const printOptions = options.printOptions || { quote: 'single' };
+  const root = j(file.source);
 
-/**
- * { Fixes eslint no-lonely-if rule }
- *
- * @param      {String}   filePath                Path of the file to fix
- * @param      {Boolean}  [updateInplace=false]   Whether to update the file or not
- * @return     {String}   { Transformed string to write to the file }
- */
-const transformNoLonelyIf = (filePath, updateInplace = false) => {
-  if (filePath.constructor !== String) {
-    throw new Error('filePath should be a String');
-  }
+  // console.log('\nFixing FilePath - %s\n', file.path);
 
-  const source = fs.readFileSync(resolve(__dirname, filePath), { encoding: 'utf8' });
+  const didTransform = root
+    .find(j.IfStatement)
+    .filter((nodePath) => {
+      const closestBlockStatementCollec = j(nodePath).closest(j.BlockStatement);
 
-  const root = j(source);
+      if (closestBlockStatementCollec.length) {
+        const blockStatementBody = closestBlockStatementCollec.nodes()[0].body;
 
-  console.log('\nFixing FilePath - %s\n', filePath);
+        return (
+          closestBlockStatementCollec.length &&
+          blockStatementBody.length === 1 &&
+          blockStatementBody[0].type === 'IfStatement'
+        );
+      }
 
-  const validIfNodesCollec = root.find(j.IfStatement).filter((nodePath) => {
-    const closestBlockStatementCollec = j(nodePath).closest(j.BlockStatement);
+      return false;
+    })
+    .forEach((nodePath) => {
+      const closestBlockStatementCollec = j(nodePath).closest(j.BlockStatement);
 
-    if (closestBlockStatementCollec.length) {
-      const blockStatementBody = closestBlockStatementCollec.nodes()[0].body;
+      const closestBlockStatementStart = closestBlockStatementCollec.nodes()[0].start;
 
-      return (
-        closestBlockStatementCollec.length &&
-        blockStatementBody.length === 1 &&
-        blockStatementBody[0].type === 'IfStatement'
-      );
-    }
+      const closestIfStatementCollec = j(nodePath).closest(j.IfStatement, (node) => {
+        return node.alternate && node.alternate.start === closestBlockStatementStart;
+      });
 
-    return false;
-  });
+      closestIfStatementCollec.forEach((ifStatementNodePath) => {
+        ifStatementNodePath.value.alternate = nodePath.value;
+      });
+    })
+    .size();
 
-  validIfNodesCollec.forEach((nodePath) => {
-    const closestBlockStatementCollec = j(nodePath).closest(j.BlockStatement);
-
-    const closestBlockStatementStart = closestBlockStatementCollec.nodes()[0].start;
-
-    const closestIfStatementCollec = j(nodePath).closest(j.IfStatement, (node) => {
-      return node.alternate && node.alternate.start === closestBlockStatementStart;
-    });
-
-    closestIfStatementCollec.forEach((ifStatementNodePath) => {
-      ifStatementNodePath.value.alternate = nodePath.value;
-    });
-  });
-
-  const results = root.toSource();
-
-  if (updateInplace) {
-    fs.writeFileSync(resolve(__dirname, filePath), results.replace(/;;/g, ';'));
-  }
-
-  return results;
+  return didTransform ? root.toSource(printOptions) : null;
 };
-
-module.exports = transformNoLonelyIf;

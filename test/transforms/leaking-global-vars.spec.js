@@ -8,7 +8,7 @@ const sinonChai = require('sinon-chai');
 
 chai.use(sinonChai);
 
-const transformLeakingGlobalsVars = require('../../transforms/leaking-global-vars');
+const transformLeakingGlobalsVars = require('../../transforms/with-globals/leaking-global-vars');
 
 describe('leaking-global-vars transformer', () => {
   beforeEach(() => {

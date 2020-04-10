@@ -8,7 +8,7 @@ const findGlobals = require('acorn-globals');
 const j = jscodeshift;
 
 // global objects
-const constants = require('../static/constants.json');
+const constants = require('../../static/constants.json');
 
 const allExternalDeps = Object.keys(constants).reduce((accumulator, key) => accumulator.concat(constants[key]), []);
 
@@ -34,7 +34,7 @@ const transformUnusedAssignedVars = (filePath, updateInplace = false) => {
 
   const root = j(source);
 
-  console.log('\nFixing FilePath - %s\n', filePath);
+  // console.log('\nFixing FilePath - %s\n', filePath);
 
   dependencies.forEach(({ name, nodes }) => {
     console.log('Fixing Dependency - %s\n', name);
@@ -47,7 +47,7 @@ const transformUnusedAssignedVars = (filePath, updateInplace = false) => {
     );
 
     if (!nodePathsCollection.length) {
-      console.log('\nFixing FilePath - %s\nNo matching nodes found for dependency - %s\n', filePath, name);
+      // console.log('\nFixing FilePath - %s\nNo matching nodes found for dependency - %s\n', filePath, name);
       return;
     }
 

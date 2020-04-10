@@ -9,7 +9,7 @@ const walk = require('acorn-walk');
 const j = jscodeshift;
 
 // global objects
-const constants = require('../static/constants.json');
+const constants = require('../../static/constants.json');
 
 const allExternalDeps = Object.keys(constants).reduce((accumulator, key) => accumulator.concat(constants[key]), []);
 
@@ -231,7 +231,7 @@ const transformLeakingGlobalsVars = (filePath, dependencies = [], updateInplace 
 
   const root = j(source);
 
-  console.log('\nFixing FileName - %s\n', filePath);
+  // console.log('\nFixing FileName - %s\n', filePath);
 
   dependencies.forEach(({ name, nodes }) => {
     console.log('Dependency - %s\n', name);
@@ -244,7 +244,7 @@ const transformLeakingGlobalsVars = (filePath, dependencies = [], updateInplace 
     );
 
     if (!nodePathsCollection.length) {
-      console.log('\nFixing FileName - %s\nNo matching nodes found for dependency - %s\n', filePath, name);
+      // console.log('\nFixing FileName - %s\nNo matching nodes found for dependency - %s\n', filePath, name);
       return;
     }
 

@@ -8,7 +8,7 @@ const sinonChai = require('sinon-chai');
 
 chai.use(sinonChai);
 
-const transformUnusedAssignedVars = require('../../transforms/unused-assigned-vars');
+const transformUnusedAssignedVars = require('../../transforms/with-globals/unused-assigned-vars');
 
 describe('unused-assigned-vars transformer', () => {
   beforeEach(() => {

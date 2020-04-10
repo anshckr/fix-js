@@ -13,16 +13,11 @@ const findGlobalsExposed = require('./utils/find-globals-exposed');
 const constants = require('./static/constants.json');
 
 // transformers
-const transformLeakingGlobalsVars = require('./transforms/leaking-global-vars');
-const transformUnusedAssignedVars = require('./transforms/unused-assigned-vars');
-const transformNoCamelCaseVars = require('./transforms/no-camelcase-vars');
-const transformDestructAssign = require('./transforms/react-destruct-assign');
-const transformActionAs = require('./transforms/react-action-as');
-const transformBlockScopedVar = require('./transforms/block-scoped-vars');
-const transformNoLonelyIf = require('./transforms/no-lonely-if');
-const transformNoNestedTernary = require('./transforms/no-nested-ternary');
-const transformNoUnderscoreDangle = require('./transforms/no-underscore-dangle');
-const transformNoUnusedVars = require('./transforms/no-unused-vars');
+const transformLeakingGlobalsVars = require('./transforms/with-globals/leaking-global-vars');
+const transformUnusedAssignedVars = require('./transforms/with-globals/unused-assigned-vars');
+const transformNoCamelCaseVars = require('./transforms/with-globals/no-camelcase-vars');
+const transformBlockScopedVar = require('./transforms/with-globals/block-scoped-vars');
+const transformNoUnderscoreDangle = require('./transforms/with-globals/no-underscore-dangle');
 
 /* will be ignored in dependencies -- start */
 
@@ -88,11 +83,13 @@ function executeTransformer(filePath) {
 
   const source = fs.readFileSync(resolve(__dirname, filePath), { encoding: 'utf8' });
 
-  const skipGlobals = ['transformDestructAssign', 'transformActionAs'].includes(this.name);
+  const passCollectedGlobals = [
+    'transformNoCamelCaseVars',
+    'transformBlockScopedVar',
+    'transformNoUnderscoreDangle'
+  ].includes(this.name);
 
-  if (skipGlobals) {
-    results = this(filePath);
-  } else {
+  if (passCollectedGlobals) {
     const ast = acorn.parse(source, {
       loc: true
     });
@@ -115,6 +112,8 @@ function executeTransformer(filePath) {
         dependencies
       });
     }
+  } else {
+    results = this(filePath);
   }
 
   if (results) {
@@ -210,11 +209,6 @@ module.exports = {
   transformLeakingGlobalsVars,
   transformUnusedAssignedVars,
   transformNoCamelCaseVars,
-  transformDestructAssign,
-  transformActionAs,
   transformBlockScopedVar,
-  transformNoLonelyIf,
-  transformNoNestedTernary,
-  transformNoUnderscoreDangle,
-  transformNoUnusedVars
+  transformNoUnderscoreDangle
 };

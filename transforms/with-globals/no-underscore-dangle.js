@@ -1,55 +1,48 @@
 const fs = require('fs');
 const { resolve } = require('path');
 const jscodeshift = require('jscodeshift');
-const _ = require('lodash');
+// const _ = require('lodash');
 
 const j = jscodeshift;
 
 // global objects
-const constants = require('../static/constants.json');
+const constants = require('../../static/constants.json');
 
 const allExternalDeps = Object.keys(constants).reduce((accumulator, key) => accumulator.concat(constants[key]), []);
 
-const isNotCamelCased = (value) => {
-  return allExternalDeps.indexOf(value) === -1 && /^[a-z]/.test(value) && !/^[a-z][A-Za-z]*$/.test(value);
-};
+const hasDanglingUnderscore = (value, isFunctionalParam = false) => {
+  let leadingRegex = /^__[a-zA-Z]+/;
 
-const isJqueryObjVar = (value) => {
-  return allExternalDeps.indexOf(value) === -1 && /^\$[a-zA-Z_]+/.test(value);
-};
+  if (isFunctionalParam) {
+    leadingRegex = /^_[a-zA-Z_]+/;
+  }
 
-const isSnakeCasedVar = (value) => {
   return (
     allExternalDeps.indexOf(value) === -1 &&
-    /^[a-zA-Z_]+_[a-zA-Z]+/.test(value) &&
-    value.toUpperCase() !== value &&
-    value.indexOf('__') === -1
+    (leadingRegex.test(value) || /^[a-zA-Z]+_$/.test(value)) &&
+    value.toUpperCase() !== value
   );
 };
 
-const getNonJqueryName = (jqueryObjName) => {
-  return jqueryObjName.split('$').slice(-1).join('$');
-};
-
-const isFixableVariable = (variableName) => {
-  let isEligibleVariable = false;
-
-  if (isNotCamelCased(variableName) || isSnakeCasedVar(variableName)) {
-    isEligibleVariable = true;
+const replaceDanglingUnderscore = (value, isFunctionalParam = false) => {
+  if (/^__/.test(value) && !isFunctionalParam) {
+    return value.replace(/__/g, '_');
   }
 
-  if (isJqueryObjVar(variableName)) {
-    const nonJqueryName = getNonJqueryName(variableName);
+  return value.replace(/_/g, '');
+};
 
-    if (isNotCamelCased(nonJqueryName)) {
-      isEligibleVariable = true;
-    }
+const isFixableVariable = (variableName, isFunctionalParam = false) => {
+  let isEligibleVariable = false;
+
+  if (hasDanglingUnderscore(variableName, isFunctionalParam)) {
+    isEligibleVariable = true;
   }
 
   return isEligibleVariable;
 };
 
-const getAndFixIdentifiers = (nodePathCollection, variableName) => {
+const getAndFixIdentifiers = (nodePathCollection, variableName, isFunctionalParam = false) => {
   const depUsageCollec = nodePathCollection.find(j.Identifier, { name: variableName }).filter((depPath) => {
     if (depPath.name === 'property') {
       return depPath.parentPath.value.computed;
@@ -61,14 +54,8 @@ const getAndFixIdentifiers = (nodePathCollection, variableName) => {
   depUsageCollec.forEach((depUsagePath) => {
     const depName = depUsagePath.value.name;
 
-    if (isNotCamelCased(depName) || isSnakeCasedVar(depName)) {
-      depUsagePath.value.name = _.camelCase(depName);
-    }
-
-    if (isJqueryObjVar(depName)) {
-      const nonJqueryName = getNonJqueryName(depName);
-
-      depUsagePath.value.name = `$${_.camelCase(nonJqueryName)}`;
+    if (hasDanglingUnderscore(depName, isFunctionalParam)) {
+      depUsagePath.value.name = replaceDanglingUnderscore(depName, isFunctionalParam);
     }
   });
 };
@@ -77,8 +64,8 @@ const fixFunctionParams = (nodePath) => {
   nodePath.value.params.forEach((paramNode) => {
     const variableName = paramNode.name;
 
-    if (isFixableVariable(variableName)) {
-      getAndFixIdentifiers(j(nodePath), variableName);
+    if (isFixableVariable(variableName, true)) {
+      getAndFixIdentifiers(j(nodePath), variableName, true);
     }
   });
 };
@@ -91,12 +78,12 @@ const fixFunctionParams = (nodePath) => {
  * @param      {Object}   [collectedGlobals={}]   Contains two keys globalsExposed, dependencies for the file
  * @return     {String}   { Transformed string to write to the file }
  */
-const transformNoCamelCaseVars = (filePath, updateInplace = false, collectedGlobals = {}) => {
+const transformNoUnderscoreDangle = (filePath, updateInplace = false, collectedGlobals = {}) => {
   if (filePath.constructor !== String) {
     throw new Error('filePath should be a String');
   }
 
-  console.log('\nFixing FileName - %s\n', filePath);
+  // console.log('\nFixing FileName - %s\n', filePath);
 
   const source = fs.readFileSync(resolve(__dirname, filePath), { encoding: 'utf8' });
 
@@ -141,7 +128,7 @@ const transformNoCamelCaseVars = (filePath, updateInplace = false, collectedGlob
       isFixableVariable(variableName)
     ) {
       // Function name is not camel cased
-      nodePath.value.id.name = _.camelCase(variableName);
+      nodePath.value.id.name = replaceDanglingUnderscore(variableName);
 
       // alter function invocations
       root
@@ -149,7 +136,9 @@ const transformNoCamelCaseVars = (filePath, updateInplace = false, collectedGlob
           return callExpressionNode.callee.name === variableName;
         })
         .forEach((callExpressionNodePath) => {
-          callExpressionNodePath.value.callee.name = _.camelCase(callExpressionNodePath.value.callee.name);
+          callExpressionNodePath.value.callee.name = replaceDanglingUnderscore(
+            callExpressionNodePath.value.callee.name
+          );
         });
 
       // alter exposed property values
@@ -158,7 +147,31 @@ const transformNoCamelCaseVars = (filePath, updateInplace = false, collectedGlob
           return propertyNode.value.name === variableName;
         })
         .forEach((propertyNodePath) => {
-          propertyNodePath.value.value.name = _.camelCase(propertyNodePath.value.value.name);
+          propertyNodePath.value.value.name = replaceDanglingUnderscore(propertyNodePath.value.value.name);
+        });
+
+      // alter call expression arguments
+      root
+        .find(j.Identifier, (identifierNode) => {
+          return identifierNode.name === variableName;
+        })
+        .filter((identifierNodePath) => {
+          return identifierNodePath.parent.value.type === 'CallExpression';
+        })
+        .forEach((identifierNodePath) => {
+          identifierNodePath.value.name = replaceDanglingUnderscore(identifierNodePath.value.name);
+        });
+
+      // alter member expression with call, bind, apply
+      root
+        .find(j.MemberExpression, (memberExpNode) => {
+          return (
+            memberExpNode.object.name === variableName &&
+            ['call', 'bind', 'apply'].includes(memberExpNode.property.name)
+          );
+        })
+        .forEach((memberExpNodePath) => {
+          memberExpNodePath.value.object.name = replaceDanglingUnderscore(memberExpNodePath.value.object.name);
         });
     }
   });
@@ -180,4 +193,4 @@ const transformNoCamelCaseVars = (filePath, updateInplace = false, collectedGlob
   return results;
 };
 
-module.exports = transformNoCamelCaseVars;
+module.exports = transformNoUnderscoreDangle;

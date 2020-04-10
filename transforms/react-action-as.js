@@ -1,39 +1,35 @@
-const fs = require('fs');
-const { resolve } = require('path');
-const jscodeshift = require('jscodeshift');
+module.exports = (file, api, options) => {
+  const j = api.jscodeshift;
 
-const j = jscodeshift;
+  const printOptions = options.printOptions || { quote: 'single' };
+  const root = j(file.source);
 
-/**
- * { Transforms all named export actions use 'as' while importing.
- * Also converts the 'bindActionCreators' objectExpressionNode to use the as imported action }
- *
- * @param      {String}   filePath                Path of the file to fix
- * @param      {Boolean}  [updateInplace=false]   Whether to update the file or not
- * @return     {String}   { Transformed string to write to the file }
- */
-const transformActionAs = (filePath, updateInplace = false) => {
-  if (filePath.constructor !== String) {
-    throw new Error('filePath should be a String');
-  }
+  // console.log('\nFixing FilePath - %s\n', file.path);
 
-  console.log('\nFixing FileName - %s\n', filePath);
+  const didTransformObjExpression = root
+    .find(j.CallExpression, (node) => {
+      return node.callee.name === 'bindActionCreators';
+    })
+    .forEach((nodePath) => {
+      const objectExpressNode = nodePath.value.arguments.find((node) => {
+        return node.type === 'ObjectExpression';
+      });
 
-  const source = fs.readFileSync(resolve(__dirname, filePath), { encoding: 'utf8' });
+      objectExpressNode.properties = objectExpressNode.properties.map((property) => {
+        if (property.key.name === property.value.name) {
+          return j.property('init', j.identifier(property.key.name), j.identifier(`${property.key.name}Action`));
+        }
 
-  const root = j(source);
+        return property;
+      });
+    })
+    .size();
 
-  const callExpCollection = root.find(j.CallExpression, (node) => {
-    return node.callee.name === 'bindActionCreators';
-  });
-
-  if (callExpCollection.length) {
-    // fix only if bindActionCreators is present in the file
-    const importDeclCollection = root.find(j.ImportDeclaration, (node) => {
+  const didTransformImports = root
+    .find(j.ImportDeclaration, (node) => {
       return node.source.type === 'Literal' && node.source.value.indexOf('actions') !== -1;
-    });
-
-    importDeclCollection.forEach((nodePath) => {
+    })
+    .forEach((nodePath) => {
       nodePath.value.specifiers = nodePath.value.specifiers.map((specifier) => {
         if (specifier.type !== 'ImportSpecifier') {
           return specifier;
@@ -48,30 +44,8 @@ const transformActionAs = (filePath, updateInplace = false) => {
 
         return specifier;
       });
-    });
+    })
+    .size();
 
-    callExpCollection.forEach((nodePath) => {
-      const objectExpressNode = nodePath.value.arguments.find((node) => {
-        return node.type === 'ObjectExpression';
-      });
-
-      objectExpressNode.properties = objectExpressNode.properties.map((property) => {
-        if (property.key.name === property.value.name) {
-          return j.property('init', j.identifier(property.key.name), j.identifier(`${property.key.name}Action`));
-        }
-
-        return property;
-      });
-    });
-  }
-
-  const results = root.toSource();
-
-  if (updateInplace) {
-    fs.writeFileSync(resolve(__dirname, filePath), results.replace(/;;/g, ';'));
-  }
-
-  return results;
+  return didTransformImports || didTransformObjExpression ? root.toSource(printOptions) : null;
 };
-
-module.exports = transformActionAs;

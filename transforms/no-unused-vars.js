@@ -1,72 +1,50 @@
-const fs = require('fs');
-const { resolve } = require('path');
-const jscodeshift = require('jscodeshift');
+module.exports = (file, api, options) => {
+  const j = api.jscodeshift;
 
-const j = jscodeshift;
+  const printOptions = options.printOptions || { quote: 'single' };
+  const root = j(file.source);
 
-const isParamGettingUsed = (nodePathCollection, variableName) => {
-  const depUsageCollec = nodePathCollection.find(j.Identifier, { name: variableName }).filter((depPath) => {
-    if (depPath.name === 'property') {
-      return depPath.parentPath.value.computed;
-    }
+  // console.log('\nFixing FilePath - %s\n', file.path);
 
-    return !['key'].includes(depPath.name);
-  });
+  const isParamGettingUsed = (nodePathCollection, variableName) => {
+    const depUsageCollec = nodePathCollection.find(j.Identifier, { name: variableName }).filter((depPath) => {
+      if (depPath.name === 'property') {
+        return depPath.parentPath.value.computed;
+      }
 
-  return depUsageCollec.length - 1;
-};
+      return !['key'].includes(depPath.name);
+    });
 
-const isVarGettingUsed = (nodePathCollection, variableName) => {
-  const depUsageCollec = nodePathCollection.find(j.Identifier, { name: variableName }).filter((depPath) => {
-    if (depPath.name === 'property') {
-      return depPath.parentPath.value.computed;
-    }
+    return depUsageCollec.length - 1;
+  };
 
-    return !['key'].includes(depPath.name);
-  });
+  const isVarGettingUsed = (nodePathCollection, variableName) => {
+    const depUsageCollec = nodePathCollection.find(j.Identifier, { name: variableName }).filter((depPath) => {
+      if (depPath.name === 'property') {
+        return depPath.parentPath.value.computed;
+      }
 
-  return depUsageCollec.length;
-};
+      return !['key'].includes(depPath.name);
+    });
 
-const getLastUsedParamIndex = (nodePath) => {
-  let lastUsedParamIndex = -1;
+    return depUsageCollec.length;
+  };
 
-  nodePath.value.params.forEach((paramNode, index) => {
-    const variableName = paramNode.name;
+  const getLastUsedParamIndex = (nodePath) => {
+    let lastUsedParamIndex = -1;
 
-    if (isParamGettingUsed(j(nodePath), variableName)) {
-      lastUsedParamIndex = index;
-    }
-  });
+    nodePath.value.params.forEach((paramNode, index) => {
+      const variableName = paramNode.name;
 
-  return lastUsedParamIndex;
-};
+      if (isParamGettingUsed(j(nodePath), variableName)) {
+        lastUsedParamIndex = index;
+      }
+    });
 
-/**
- * { Transformer to fix eslint no-unused-var rule }
- *
- * @param      {String}   filePath                Path of the file to fix
- * @param      {Boolean}  [updateInplace=false]   Whether to update the file or not
- * @return     {String}   { Transformed string to write to the file }
- */
-const transformNoUnusedVars = (filePath, updateInplace = false) => {
-  if (filePath.constructor !== String) {
-    throw new Error('filePath should be a String');
-  }
+    return lastUsedParamIndex;
+  };
 
-  const source = fs.readFileSync(resolve(__dirname, filePath), { encoding: 'utf8' });
-
-  // const ast = acorn.parse(source, {
-  //   loc: true
-  // });
-
-  const root = j(source);
-
-  console.log('\nFixing FilePath - %s\n', filePath);
-
-  const functionExpressionCollec = root.find(j.FunctionExpression);
-
-  functionExpressionCollec.forEach((nodePath) => {
+  const fixFunctionalNodePath = (nodePath) => {
     const lastUsedParamIndex = getLastUsedParamIndex(nodePath);
 
     if (lastUsedParamIndex !== -1) {
@@ -91,44 +69,21 @@ const transformNoUnusedVars = (filePath, updateInplace = false) => {
         varDeclNodePath.replace();
       }
     });
-  });
+  };
 
-  const functionDeclaratorCollec = root.find(j.FunctionDeclaration);
+  const transformedFunctionExpression = root
+    .find(j.FunctionExpression)
+    .forEach((nodePath) => {
+      fixFunctionalNodePath(nodePath);
+    })
+    .size();
 
-  functionDeclaratorCollec.forEach((nodePath) => {
-    const lastUsedParamIndex = getLastUsedParamIndex(nodePath);
+  const transformedFunctionDeclaration = root
+    .find(j.FunctionDeclaration)
+    .forEach((nodePath) => {
+      fixFunctionalNodePath(nodePath);
+    })
+    .size();
 
-    if (lastUsedParamIndex !== -1) {
-      nodePath.value.params = nodePath.value.params.slice(0, lastUsedParamIndex + 1);
-    } else {
-      nodePath.value.params = [];
-    }
-
-    const variableDeclarationCollec = j(nodePath).find(j.VariableDeclaration);
-
-    variableDeclarationCollec.forEach((varDeclNodePath) => {
-      varDeclNodePath.value.declarations = varDeclNodePath.value.declarations.filter((declarationNode) => {
-        if (declarationNode.id && !isVarGettingUsed(j(nodePath), declarationNode.id.name)) {
-          return false;
-        }
-
-        return true;
-      });
-
-      if (!varDeclNodePath.value.declarations.length) {
-        // remove that var declaration
-        varDeclNodePath.replace();
-      }
-    });
-  });
-
-  const results = root.toSource();
-
-  if (updateInplace) {
-    fs.writeFileSync(resolve(__dirname, filePath), results.replace(/;;/g, ';'));
-  }
-
-  return results;
+  return transformedFunctionExpression || transformedFunctionDeclaration ? root.toSource(printOptions) : null;
 };
-
-module.exports = transformNoUnusedVars;
