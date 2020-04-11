@@ -4,7 +4,7 @@
   "description": "Fix JS code",
   "main": "index.js",
   "scripts": {
-    "coverage": "nyc --reporter=html --reporter=text npm run mocha:test --exit",
+    "coverage": "jest --coverage",
     "sample:debug": "nodemon --inspect-brk example/sample.js",
     "sample": "node example/sample.js",
     "lint:check": "eslint --format=table --max-warnings 0 \"**/*.js\"",
@@ -50,7 +50,6 @@
     "eslint-plugin-import": "2.20.2",
     "eslint-plugin-prettier": "3.1.2",
     "jest": "^25.3.0",
-    "nyc": "15.0.1",
     "prettier": "2.0.2"
   },
   "repository": {
@@ -62,11 +61,16 @@
   },
   "homepage": "https://github.com/anshckr/fix-js#readme",
   "jest": {
-    "globals": {
-      "baseDir": "../../../"
-    },
     "roots": [
       "transforms/__tests__"
-    ]
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 54,
+        "functions": 69,
+        "lines": 69,
+        "statements": 69
+      }
+    }
   }
 }
