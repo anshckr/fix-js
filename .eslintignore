@@ -1,3 +1,5 @@
 node_modules/
 coverage/
 example/
+__tests__/
+__testfixtures__/
