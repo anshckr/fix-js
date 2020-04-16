@@ -112,6 +112,22 @@ module.exports = (file, api, options) => {
       })
       .size();
 
+    const functionUsedInVarDeclarator = root
+      .find(j.VariableDeclarator, (varDeclNode) => {
+        return (
+          varDeclNode.init &&
+          j(varDeclNode.init)
+            .find(j.Identifier, {
+              name: functionName
+            })
+            .filter((identifierNodePath) => {
+              return !['FunctionDeclaration', 'FunctionExpression'].includes(identifierNodePath.parent.value.type);
+            })
+            .size()
+        );
+      })
+      .size();
+
     return (
       functionIsInvoked ||
       functionIsReturned ||
@@ -120,7 +136,8 @@ module.exports = (file, api, options) => {
       functionUsedInArray ||
       functionUsedInAssignmentExp ||
       functionPrototypeInvokedUsed ||
-      functionInstanceUsed
+      functionInstanceUsed ||
+      functionUsedInVarDeclarator
     );
   };
 
@@ -228,49 +245,51 @@ module.exports = (file, api, options) => {
       }
     }
 
-    complexDeclarators.forEach((node) => {
-      let expressionStatementToInsert;
+    if (varDeclarationParentType !== 'Program') {
+      complexDeclarators.forEach((node) => {
+        let expressionStatementToInsert;
 
-      const variableName = node.id.name;
+        // if (node.init.type === 'CallExpression' && checkIfCallExpressionIsRemoveable(j(node))) {
+        //   // don't reinsert anything
+        //   return;
+        // }
 
-      // if (node.init.type === 'CallExpression' && checkIfCallExpressionIsRemoveable(j(node))) {
-      //   // don't reinsert anything
-      //   return;
-      // }
+        if (varDeclarationParentType !== 'Program') {
+          const replacementNode = getReplacementNodeFromRightStatement(node.init);
 
-      if (varDeclarationParentType === 'Program') {
-        if (node.init && node.init.value !== null) {
-          expressionStatementToInsert = j.expressionStatement(
-            j.assignmentExpression(
-              '=',
-              j.memberExpression(j.identifier('window'), j.identifier(variableName)),
-              node.init
-            )
-          );
-        } else {
-          globalVariables.push(variableName);
+          if (replacementNode) {
+            expressionStatementToInsert = j.expressionStatement(replacementNode);
+          }
+          // else {
+          //   globalVariables.push(variableName);
+          // }
         }
-      } else {
-        const replacementNode = getReplacementNodeFromRightStatement(node.init);
+        // else {
+        // }
 
-        if (replacementNode) {
-          expressionStatementToInsert = j.expressionStatement(replacementNode);
+        if (expressionStatementToInsert) {
+          // re-insert just after the variable declaration
+          parentKeyToModify.splice(++index, 0, expressionStatementToInsert);
         }
-      }
 
-      if (expressionStatementToInsert) {
-        // re-insert just after the variable declaration
-        parentKeyToModify.splice(++index, 0, expressionStatementToInsert);
-      }
+        // else {
+        //   expressionStatementToInsert = j.expressionStatement(node.init);
+        // }
 
-      // else {
-      //   expressionStatementToInsert = j.expressionStatement(node.init);
-      // }
+        // if (node.comments) {
+        //   expressionStatementToInsert.comments = node.comments;
+        // }
+      });
+    } else {
+      const varDeclarationToInsert = j.variableDeclaration('var', complexDeclarators);
 
-      // if (node.comments) {
-      //   expressionStatementToInsert.comments = node.comments;
-      // }
-    });
+      varDeclarationToInsert.comments = [
+        j.commentBlock(' eslint-disable no-unused-vars ', true),
+        j.commentBlock(' eslint-enable no-unused-vars ', false, true)
+      ];
+
+      parentKeyToModify.splice(++index, 0, varDeclarationToInsert);
+    }
 
     if (leadingCommentNodeIndex !== -1) {
       parentKeyToModify[leadingCommentNodeIndex].comments = leadingComments;
@@ -375,57 +394,69 @@ module.exports = (file, api, options) => {
     }
 
     // fix variableDeclaration in current scope
-    const variableDeclarationCollec = j(nodePath)
+    j(nodePath)
       .find(j.VariableDeclaration)
       .filter((varDeclNodePath) => {
         return varDeclNodePath.scope.node.start === nodePath.value.start;
-      });
+      })
+      .forEach((varDeclNodePath) => {
+        let didAlteredDeclaration;
 
-    variableDeclarationCollec.forEach((varDeclNodePath) => {
-      const idsOfComplexDeclarators = [];
+        do {
+          didAlteredDeclaration = false;
 
-      varDeclNodePath.value.declarations = varDeclNodePath.value.declarations.filter((declaratorNode) => {
-        const variableName = declaratorNode.id.name;
+          const idsOfComplexDeclarators = [];
 
-        let keepDeclarator = true;
+          const oldDeclaratorsCount = varDeclNodePath.value.declarations.length;
 
-        const isVarGettingUsed = checkIfVarGettingUsed(j(nodePath), variableName);
-        const isDeclaratorComplex = checkIfDeclaratorIsComplex(declaratorNode);
+          varDeclNodePath.value.declarations = varDeclNodePath.value.declarations.filter((declaratorNode) => {
+            const variableName = declaratorNode.id.name;
 
-        if (!isVarGettingUsed) {
-          keepDeclarator = false;
+            let keepDeclarator = true;
 
-          if (isDeclaratorComplex) {
-            keepDeclarator = true;
+            const isVarGettingUsed = checkIfVarGettingUsed(j(nodePath), variableName);
+            const isDeclaratorComplex = checkIfDeclaratorIsComplex(declaratorNode);
 
-            idsOfComplexDeclarators.push(variableName);
+            if (!isVarGettingUsed) {
+              keepDeclarator = false;
+
+              if (isDeclaratorComplex) {
+                keepDeclarator = true;
+
+                idsOfComplexDeclarators.push(variableName);
+              }
+
+              // handle AssignmentExpression of variable
+              j(nodePath)
+                .find(j.AssignmentExpression, (node) => {
+                  return node.left.name === variableName;
+                })
+                .forEach((assignExpNodePath) => {
+                  const replacementNode = getReplacementNodeFromRightStatement(assignExpNodePath.value.right);
+
+                  if (replacementNode) {
+                    assignExpNodePath.replace(replacementNode);
+                  } else {
+                    handleRemovalOfAssignmentExp(assignExpNodePath);
+                  }
+                });
+            }
+
+            return keepDeclarator;
+          });
+
+          if (varDeclNodePath.value.declarations.length !== oldDeclaratorsCount || idsOfComplexDeclarators.length) {
+            didAlteredDeclaration = true;
           }
 
-          // handle AssignmentExpression of variable
-          j(nodePath)
-            .find(j.AssignmentExpression, (node) => {
-              return node.left.name === variableName;
-            })
-            .forEach((assignExpNodePath) => {
-              const replacementNode = getReplacementNodeFromRightStatement(assignExpNodePath.value.right);
-
-              if (replacementNode) {
-                assignExpNodePath.replace(replacementNode);
-              } else {
-                handleRemovalOfAssignmentExp(assignExpNodePath);
-              }
-            });
-        }
-
-        return keepDeclarator;
+          if (!varDeclNodePath.value.declarations.length) {
+            didAlteredDeclaration = false;
+            varDeclNodePath.replace();
+          } else if (idsOfComplexDeclarators.length) {
+            handleDeclarationWithComplexDeclarators(varDeclNodePath, idsOfComplexDeclarators);
+          }
+        } while (varDeclNodePath.value && varDeclNodePath.value.declarations.length && didAlteredDeclaration);
       });
-
-      if (!varDeclNodePath.value.declarations.length) {
-        varDeclNodePath.replace();
-      } else if (idsOfComplexDeclarators.length) {
-        handleDeclarationWithComplexDeclarators(varDeclNodePath, idsOfComplexDeclarators);
-      }
-    });
 
     // check if function itself is getting used/not
     if (nodePath.value.id && nodePath.name !== 'right') {
