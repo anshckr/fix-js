@@ -28,11 +28,15 @@
     "jscodeshift",
     "react",
     "react/destructuring-assignment",
+    "react-action-as",
     "unused assigned variables",
     "no-camelcase",
     "no-lonely-if",
     "block-scoped-var",
-    "no-nested-ternary"
+    "no-nested-ternary",
+    "no-unused-vars",
+    "block-scoped-var",
+    "no-underscore-dangle"
   ],
   "author": "Anshul Nema",
   "license": "MIT",
