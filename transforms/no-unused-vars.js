@@ -8,8 +8,6 @@ module.exports = (file, api, options) => {
 
   console.log('\nFixing FilePath - %s\n', file.path);
 
-  const globalVariables = [];
-
   const isParamGettingUsed = (nodePathCollection, variableName) => {
     const depUsageCollec = nodePathCollection.find(j.Identifier, { name: variableName }).filter((depPath) => {
       if (depPath.name === 'property') {
@@ -162,22 +160,6 @@ module.exports = (file, api, options) => {
     );
   };
 
-  const checkIfCallExpressionIsRemoveable = (callExpParentCollec) => {
-    const isJqueryAssignExp = callExpParentCollec
-      .find(j.CallExpression, (node) => {
-        return ['document', '$', 'jQuery'].includes(node.callee.name);
-      })
-      .size();
-
-    const isAlteringJqueryObject = callExpParentCollec
-      .find(j.MemberExpression, (node) => {
-        return ['css'].includes(node.property.name);
-      })
-      .size();
-
-    return isJqueryAssignExp && !isAlteringJqueryObject;
-  };
-
   const handleDeclarationWithComplexDeclarators = (varDeclarationNodePath, idsOfComplexDeclarators) => {
     const varDeclCollec = j(varDeclarationNodePath);
 
@@ -249,44 +231,53 @@ module.exports = (file, api, options) => {
       complexDeclarators.forEach((node) => {
         let expressionStatementToInsert;
 
-        // if (node.init.type === 'CallExpression' && checkIfCallExpressionIsRemoveable(j(node))) {
-        //   // don't reinsert anything
-        //   return;
-        // }
-
         if (varDeclarationParentType !== 'Program') {
           const replacementNode = getReplacementNodeFromRightStatement(node.init);
 
           if (replacementNode) {
             expressionStatementToInsert = j.expressionStatement(replacementNode);
           }
-          // else {
-          //   globalVariables.push(variableName);
-          // }
         }
-        // else {
-        // }
 
         if (expressionStatementToInsert) {
           // re-insert just after the variable declaration
+          if (node.comments) {
+            expressionStatementToInsert.comments = node.comments;
+          }
+
           parentKeyToModify.splice(++index, 0, expressionStatementToInsert);
         }
-
-        // else {
-        //   expressionStatementToInsert = j.expressionStatement(node.init);
-        // }
-
-        // if (node.comments) {
-        //   expressionStatementToInsert.comments = node.comments;
-        // }
       });
+    } else if (complexDeclarators.length === 1 && complexDeclarators[0].init) {
+      const varDeclarator = complexDeclarators[0];
+
+      const expressionStatementToInsert = j.expressionStatement(
+        j.assignmentExpression(
+          '=',
+          j.memberExpression(j.identifier('window'), j.identifier(varDeclarator.id.name)),
+          varDeclarator.init
+        )
+      );
+
+      if (!nonComplexDeclarators.length) {
+        expressionStatementToInsert.comments = varDeclarationNodePath.value.comments;
+      }
+
+      parentKeyToModify.splice(++index, 0, expressionStatementToInsert);
     } else {
       const varDeclarationToInsert = j.variableDeclaration('var', complexDeclarators);
-
-      varDeclarationToInsert.comments = [
+      const commentsArr = [
         j.commentBlock(' eslint-disable no-unused-vars ', true),
         j.commentBlock(' eslint-enable no-unused-vars ', false, true)
       ];
+
+      if (!nonComplexDeclarators.length && varDeclarationNodePath.value.comments) {
+        varDeclarationToInsert.comments = varDeclarationNodePath.value.comments;
+      } else {
+        varDeclarationToInsert.comments = [];
+      }
+
+      varDeclarationToInsert.comments = varDeclarationToInsert.comments.concat(commentsArr);
 
       parentKeyToModify.splice(++index, 0, varDeclarationToInsert);
     }
@@ -309,13 +300,6 @@ module.exports = (file, api, options) => {
   };
 
   const handleRemovalOfAssignmentExp = (assignExpNodePath) => {
-    // if (rightNode.type === 'CallExpression' &&
-    // !checkIfCallExpressionIsRemoveable(j(assignExpNodePath))) {
-    //   assignExpNodePath.replace(rightNode);
-
-    //   return;
-    // }
-
     const closestExpStatementCollec = j(assignExpNodePath).closest(j.ExpressionStatement);
 
     const closestExpStatementNodePath = closestExpStatementCollec.paths()[0];
@@ -467,8 +451,10 @@ module.exports = (file, api, options) => {
 
       if (!isFunctionGettingUsed) {
         if (!nodePath.scope.parent.isGlobal) {
-          console.log('\n Removed Function: %s', functionName);
-          nodePath.replace();
+          if (nodePath.parent.value.type !== 'CallExpression') {
+            console.log('\n Removed Function: %s', functionName);
+            nodePath.replace();
+          }
         } else {
           const commentToInsert = j.commentLine(' eslint-disable-next-line no-unused-vars', true);
 
@@ -525,16 +511,6 @@ module.exports = (file, api, options) => {
       });
     })
     .size();
-
-  // if (globalVariables.length) {
-  //   const obj = {};
-
-  //   globalVariables.forEach((variable) => {
-  //     obj[variable] = 'true';
-  //   });
-
-  //   console.log('\nEslint obj: %s', JSON.stringify(obj));
-  // }
 
   return transformedFunctionExpression || transformedFunctionDeclaration || transformedProgramDeclaration
     ? root.toSource(printOptions)
