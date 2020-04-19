@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "coverage": "jest --coverage",
-    "sample:debug": "nodemon --inspect-brk example/sample.js",
-    "sample": "node example/sample.js",
+    "asPackage:debug": "nodemon --inspect-brk example/asPackage.js",
+    "asPackage": "node example/asPackage.js",
     "lint:check": "eslint --format=table --max-warnings 0 \"**/*.js\"",
     "lint:fix": "npm run lint:check -- --fix",
     "prettier:check": "prettier --check \"**/*.js\"",

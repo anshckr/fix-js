@@ -146,6 +146,53 @@ render() {
 }
 ```
 
+#### `block-scoped-var`
+
+Transformer that moves all the variable declarators to their scope level
+
+```sh
+jscodeshift -t ./transforms/block-scoped-var.js <file>
+```
+
+```js
+function someFunc() {
+  if (someCondition) {
+    var i = 1;
+  } else {
+    var i = 2;
+  }
+
+  for (var j = 0; j < i; j++) {
+    ...
+  }
+
+  for (var k in someObj) {
+    ...
+  }
+}
+```
+
+The above will get converted to
+
+```js
+function someFunc() {
+  var i, j, k;
+  if (someCondition) {
+    i = 1;
+  } else {
+    i = 2;
+  }
+
+  for (j = 0; j < i; j++) {
+    ...
+  }
+
+  for (k in someObj) {
+    ...
+  }
+}
+```
+
 ## Setup & Run When Using As A Package
 
 ```sh
@@ -160,7 +207,6 @@ var {
   transformLeakingGlobalsVars,
   transformUnusedAssignedVars,
   transformNoCamelCaseVars,
-  transformBlockScopedVar,
   transformNoUnderscoreDangle
 } = require('@anshckr/fix-js');
 
@@ -248,59 +294,7 @@ function someFunc() {}
 someFunc();
 ```
 
-### 5. `transformBlockScopedVar` (Moves all the variable declarators to their scope level)
-
-| Parameter | Type | Description |
-| :--- | :--- | :--- |
-| `filePath `  | `String`  | **Required**. The file path you want to fix  |
-| `updateInplace ` | `Boolean` | **Optional**. Whether to update the file or not. **Default:** false |
-
-**Returns**
-
-| Type | Description |
-| :--- | :--- |
-| `String` | Transformed file content |
-
-```js
-function someFunc() {
-  if (someCondition) {
-    var i = 1;
-  } else {
-    var i = 2;
-  }
-
-  for (var j = 0; j < i; j++) {
-    ...
-  }
-
-  for (var k in someObj) {
-    ...
-  }
-}
-```
-
-The above will get converted to
-
-```js
-function someFunc() {
-  var i, j, k;
-  if (someCondition) {
-    i = 1;
-  } else {
-    i = 2;
-  }
-
-  for (j = 0; j < i; j++) {
-    ...
-  }
-
-  for (k in someObj) {
-    ...
-  }
-}
-```
-
-### 6. `transformNoUnderscoreDangle` (Transformer to fix leading '__' in function names to "\_", removes "\_" from function params)
+### 5. `transformNoUnderscoreDangle` (Transformer to fix leading '__' in function names to "\_", removes "\_" from function params)
 
 | Parameter | Type | Description |
 | :--- | :--- | :--- |
