@@ -193,6 +193,34 @@ function someFunc() {
 }
 ```
 
+#### `no-camelcase`
+
+Transformer to fix all the non camel cased variables and function names in a JS file
+
+```sh
+jscodeshift -t ./transforms/no-camelcase.js <file>
+```
+
+##### Options:
+
+`--fix-exposed-functions=true`: Fixes non camel-cased functions that are exposed from the file
+
+`--fix-dependencies=true`: Finds all the dependencies needed by the file and fixes them if they are not camel-cased
+
+```js
+var _some_var, $some_var;
+function some_func() {}
+some_func();
+```
+
+The above will get converted to (with no options passed)
+
+```js
+var someVar, $someVar;
+function some_func() {}
+some_func();
+```
+
 ## Setup & Run When Using As A Package
 
 ```sh
@@ -206,7 +234,6 @@ var {
   fixJSsAtPath,
   transformLeakingGlobalsVars,
   transformUnusedAssignedVars,
-  transformNoCamelCaseVars,
   transformNoUnderscoreDangle
 } = require('@anshckr/fix-js');
 
@@ -263,38 +290,7 @@ The utility will declare these types leaking variables
 | :--- | :--- |
 | `String` | Transformed file content |
 
-
-### 4. `transformNoCamelCaseVars` (Transformer to fix all the non camel cased variables from a JS file)
-
-| Parameter | Type | Description |
-| :--- | :--- | :--- |
-| `filePath `  | `String`  | **Required**. The file path you want to fix  |
-| `updateInplace ` | `Boolean` | **Optional**. Whether to update the file or not. **Default:** false |
-| `collectedGlobals ` | `Object` | **Optional**. Contains two keys globalsExposed, dependencies for the file. **Default:** {} |
-
-**Returns**
-
-| Type | Description |
-| :--- | :--- |
-| `String` | Transformed file content |
-
-**Example**
-
-```js
-var _some_var, $some_var;
-function some_func() {}
-some_func();
-```
-
-The above will get converted to
-
-```js
-var someVar, $someVar;
-function someFunc() {}
-someFunc();
-```
-
-### 5. `transformNoUnderscoreDangle` (Transformer to fix leading '__' in function names to "\_", removes "\_" from function params)
+### 4. `transformNoUnderscoreDangle` (Transformer to fix leading '__' in function names to "\_", removes "\_" from function params)
 
 | Parameter | Type | Description |
 | :--- | :--- | :--- |

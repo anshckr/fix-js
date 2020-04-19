@@ -15,7 +15,6 @@ const constants = require('./static/constants.json');
 // transformers
 const transformLeakingGlobalsVars = require('./transforms/with-globals/leaking-global-vars');
 const transformUnusedAssignedVars = require('./transforms/with-globals/unused-assigned-vars');
-const transformNoCamelCaseVars = require('./transforms/with-globals/no-camelcase-vars');
 const transformNoUnderscoreDangle = require('./transforms/with-globals/no-underscore-dangle');
 
 /* will be ignored in dependencies -- start */
@@ -82,7 +81,7 @@ function executeTransformer(filePath) {
 
   const source = fs.readFileSync(resolve(__dirname, filePath), { encoding: 'utf8' });
 
-  const passCollectedGlobals = ['transformNoCamelCaseVars', 'transformNoUnderscoreDangle'].includes(this.name);
+  const passCollectedGlobals = ['transformNoUnderscoreDangle'].includes(this.name);
 
   if (passCollectedGlobals) {
     const ast = acorn.parse(source, {
@@ -203,6 +202,5 @@ module.exports = {
   fixJSsAtPath,
   transformLeakingGlobalsVars,
   transformUnusedAssignedVars,
-  transformNoCamelCaseVars,
   transformNoUnderscoreDangle
 };

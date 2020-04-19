@@ -4,7 +4,6 @@ const {
   fixJSsAtPath,
   transformLeakingGlobalsVars,
   transformUnusedAssignedVars,
-  transformNoCamelCaseVars,
   transformNoUnderscoreDangle
 } = require('../index');
 const dependenciesObj = require('./dependencies.json');
@@ -28,7 +27,6 @@ const ignoreableExternalDeps = Object.keys(dependenciesObj).reduce(
 // with all params
 // fixJSsAtPath(directoryPath, transformLeakingGlobalsVars, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
 // fixJSsAtPath(directoryPath, transformUnusedAssignedVars, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
-// fixJSsAtPath(directoryPath, transformNoCamelCaseVars, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
 // fixJSsAtPath(directoryPath, transformNoUnderscoreDangle, ignoreFilesRegex, ignoreFoldersRegex, ignoreableExternalDeps);
 
 // /**
@@ -52,15 +50,6 @@ const ignoreableExternalDeps = Object.keys(dependenciesObj).reduce(
 // transformUnusedAssignedVars('/Users/Anshul/railsApp/app/assets/javascripts/admin.js', true);
 // // will return the the modified contents file instead of directly fixing
 // transformUnusedAssignedVars('/Users/Anshul/railsApp/app/assets/javascripts/admin.js');
-
-// /**
-//  * { Example usage of transformNoCamelCaseVars }
-//  */
-
-// // will update the file instead of returning the modified contents
-// transformNoCamelCaseVars('/Users/Anshul/railsApp/app/assets/javascripts/admin.js', true);
-// // will return the the modified contents file instead of directly fixing
-// transformNoCamelCaseVars('/Users/Anshul/railsApp/app/assets/javascripts/admin.js');
 
 // /**
 //  * { Example usage of transformNoUnderscoreDangle }
