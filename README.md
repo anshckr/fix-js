@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/anshckr/fix-js.svg?branch=master)](https://travis-ci.org/anshckr/fix-js)
+
 This repository contains a collection of codemod scripts for use with
 [JSCodeshift](https://github.com/facebook/jscodeshift) + it can also be added as a package to use the other transformers it exposes
 
