@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/anshckr/fix-js.svg?branch=master)](https://travis-ci.org/anshckr/fix-js)
+[![Build Status](https://travis-ci.org/anshckr/fix-js.svg?branch=master)](https://travis-ci.org/anshckr/fix-js) [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier) [![GitHub license](https://img.shields.io/github/license/anshckr/fix-js)](https://github.com/anshckr/fix-js/blob/master/LICENSE) [![GitHub stars](https://img.shields.io/github/stars/anshckr/fix-js)](https://github.com/anshckr/fix-js/stargazers)
 
 This repository contains a collection of codemod scripts for use with
 [JSCodeshift](https://github.com/facebook/jscodeshift) + it can also be added as a package to use the other transformers it exposes
