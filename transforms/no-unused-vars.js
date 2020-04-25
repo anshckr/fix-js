@@ -6,7 +6,7 @@ module.exports = (file, api, options) => {
   const printOptions = options.printOptions || { quote: 'single' };
   const root = j(file.source);
 
-  console.log('\nFixing FilePath - %s\n', file.path);
+  // console.log('\nFixing FilePath - %s\n', file.path);
 
   const isParamGettingUsed = (nodePathCollection, variableName) => {
     const depUsageCollec = nodePathCollection.find(j.Identifier, { name: variableName }).filter((depPath) => {
@@ -336,7 +336,7 @@ module.exports = (file, api, options) => {
         expStatementParentNodePath.replace();
       }
     } else {
-      console.log('\nRemoved %s', j(closestExpStatementNodePath).toSource());
+      // console.log('\nRemoved %s', j(closestExpStatementNodePath).toSource());
 
       closestExpStatementNodePath.replace();
     }
@@ -452,7 +452,7 @@ module.exports = (file, api, options) => {
       if (!isFunctionGettingUsed) {
         if (!nodePath.scope.parent.isGlobal) {
           if (nodePath.parent.value.type !== 'CallExpression') {
-            console.log('\n Removed Function: %s', functionName);
+            // console.log('\n Removed Function: %s', functionName);
             nodePath.replace();
           }
         } else {

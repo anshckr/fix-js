@@ -82,9 +82,44 @@ The above will get converted to
 
 #### `no-unused-vars`
 
+Fixes eslint no-unused-vars rule. Adds disable comment/block wherever the function/variable getting fixed is globally exposed
+
 ```sh
 jscodeshift -t ./transforms/no-unused-vars.js <file>
 ```
+
+```js
+function someFunc(index) {}
+var someUsedVar = 0, someUnUsedVar = false;
+var someVar = (function(){
+  var someInternalVar;
+
+  function someInternalFunc() {};
+
+  someUsedVar = 1;
+  return someUsedVar;
+})();
+```
+
+The above will get converted to
+
+```js
+// eslint-disable-next-line no-unused-vars
+function someFunc() {}
+var someUsedVar = 0;
+window.someUnUsedVar = false;
+
+window.someVar = (function(){
+  someUsedVar = 1;
+  return someUsedVar;
+})();
+```
+
+##### Options:
+
+`--fix-exposed-functions=true`: Fixes non camel-cased functions that are exposed from the file
+
+`--fix-dependencies=true`: Finds all the dependencies needed by the file and fixes them if they are not camel-cased
 
 #### `react-action-as`
 
