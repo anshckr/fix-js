@@ -8,6 +8,8 @@ module.exports = (file, api, options) => {
 
   // console.log('\nFixing FilePath - %s\n', file.path);
 
+  const skipDisableComments = options['skip-disable-comments'] || false;
+
   const isParamGettingUsed = (nodePathCollection, variableName) => {
     const depUsageCollec = nodePathCollection.find(j.Identifier, { name: variableName }).filter((depPath) => {
       if (depPath.name === 'property') {
@@ -266,18 +268,21 @@ module.exports = (file, api, options) => {
       parentKeyToModify.splice(++index, 0, expressionStatementToInsert);
     } else {
       const varDeclarationToInsert = j.variableDeclaration('var', complexDeclarators);
-      const commentsArr = [
-        j.commentBlock(' eslint-disable no-unused-vars ', true),
-        j.commentBlock(' eslint-enable no-unused-vars ', false, true)
-      ];
 
-      if (!nonComplexDeclarators.length && varDeclarationNodePath.value.comments) {
-        varDeclarationToInsert.comments = varDeclarationNodePath.value.comments;
-      } else {
-        varDeclarationToInsert.comments = [];
+      if (!skipDisableComments) {
+        const commentsArr = [
+          j.commentBlock(' eslint-disable no-unused-vars ', true),
+          j.commentBlock(' eslint-enable no-unused-vars ', false, true)
+        ];
+
+        if (!nonComplexDeclarators.length && varDeclarationNodePath.value.comments) {
+          varDeclarationToInsert.comments = varDeclarationNodePath.value.comments;
+        } else {
+          varDeclarationToInsert.comments = [];
+        }
+
+        varDeclarationToInsert.comments = varDeclarationToInsert.comments.concat(commentsArr);
       }
-
-      varDeclarationToInsert.comments = varDeclarationToInsert.comments.concat(commentsArr);
 
       parentKeyToModify.splice(++index, 0, varDeclarationToInsert);
     }
@@ -455,7 +460,7 @@ module.exports = (file, api, options) => {
             // console.log('\n Removed Function: %s', functionName);
             nodePath.replace();
           }
-        } else {
+        } else if (!skipDisableComments) {
           const commentToInsert = j.commentLine(' eslint-disable-next-line no-unused-vars', true);
 
           if (nodePath.value.comments) {

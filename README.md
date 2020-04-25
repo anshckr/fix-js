@@ -117,9 +117,7 @@ window.someVar = (function(){
 
 ##### Options:
 
-`--fix-exposed-functions=true`: Fixes non camel-cased functions that are exposed from the file
-
-`--fix-dependencies=true`: Finds all the dependencies needed by the file and fixes them if they are not camel-cased
+`--skip-disable-comments=true`: Doesn't add eslint disable comment/block to globals exposed
 
 #### `react-action-as`
 
